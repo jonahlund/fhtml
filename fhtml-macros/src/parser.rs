@@ -1,5 +1,6 @@
-use crate::entity;
 use syn::parse::{Parse, ParseStream};
+
+use crate::entity;
 
 impl Parse for entity::Value {
     fn parse(input: ParseStream) -> syn::Result<Self> {
@@ -66,7 +67,10 @@ impl Parse for entity::Html {
                 if input.peek(syn::Token![/]) {
                     input.parse::<syn::Token![/]>()?;
                     input.parse::<syn::Token![>]>()?;
-                    parts.push(entity::Part::SelfClosingTag { name, attributes });
+                    parts.push(entity::Part::SelfClosingTag {
+                        name,
+                        attributes,
+                    });
                 } else {
                     input.parse::<syn::Token![>]>()?;
                     parts.push(entity::Part::OpeningTag { name, attributes });

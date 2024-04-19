@@ -23,7 +23,8 @@ impl Parse for WriteInput {
 
 #[proc_macro]
 pub fn write(args: TokenStream) -> TokenStream {
-    let WriteInput { formatter, html } = syn::parse_macro_input!(args as WriteInput);
+    let WriteInput { formatter, html } =
+        syn::parse_macro_input!(args as WriteInput);
 
     let values = &html.values;
     let html = html.to_string();

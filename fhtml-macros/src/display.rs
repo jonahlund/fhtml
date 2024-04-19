@@ -1,5 +1,6 @@
-use crate::entity;
 use std::fmt;
+
+use crate::entity;
 
 impl fmt::Display for entity::DashIdent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
