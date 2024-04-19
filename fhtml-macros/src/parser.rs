@@ -33,7 +33,7 @@ impl Parse for entity::DashIdent {
 
 impl Parse for entity::Html {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let mut parts = Vec::new();
+        let mut segments = Vec::new();
         let mut values = Vec::new();
 
         while !input.is_empty() {
@@ -45,7 +45,7 @@ impl Parse for entity::Html {
 
                 input.parse::<syn::Token![>]>()?;
 
-                parts.push(entity::Part::ClosingTag { name });
+                segments.push(entity::Segment::ClosingTag { name });
 
                 continue;
             }
@@ -67,13 +67,14 @@ impl Parse for entity::Html {
                 if input.peek(syn::Token![/]) {
                     input.parse::<syn::Token![/]>()?;
                     input.parse::<syn::Token![>]>()?;
-                    parts.push(entity::Part::SelfClosingTag {
+                    segments.push(entity::Segment::SelfClosingTag {
                         name,
                         attributes,
                     });
                 } else {
                     input.parse::<syn::Token![>]>()?;
-                    parts.push(entity::Part::OpeningTag { name, attributes });
+                    segments
+                        .push(entity::Segment::OpeningTag { name, attributes });
                 }
 
                 continue;
@@ -81,19 +82,19 @@ impl Parse for entity::Html {
 
             if input.peek(syn::LitStr) {
                 values.push(input.parse()?);
-                parts.push(entity::Part::Value);
+                segments.push(entity::Segment::Value);
                 continue;
             }
 
             if input.peek(syn::token::Brace) {
                 values.push(input.parse()?);
-                parts.push(entity::Part::Value);
+                segments.push(entity::Segment::Value);
                 continue;
             }
 
             break;
         }
 
-        Ok(entity::Html { parts, values })
+        Ok(entity::Html { segments, values })
     }
 }

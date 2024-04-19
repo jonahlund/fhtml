@@ -16,23 +16,23 @@ impl fmt::Display for entity::Attribute {
     }
 }
 
-impl fmt::Display for entity::Part {
+impl fmt::Display for entity::Segment {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            entity::Part::Value => {
+            entity::Segment::Value => {
                 write!(f, "{{}}")?;
             }
-            entity::Part::OpeningTag { name, attributes } => {
+            entity::Segment::OpeningTag { name, attributes } => {
                 write!(f, "<{name}")?;
                 for attribute in attributes {
                     write!(f, " {attribute}")?;
                 }
                 write!(f, ">")?;
             }
-            entity::Part::ClosingTag { name } => {
+            entity::Segment::ClosingTag { name } => {
                 write!(f, "</{name}>")?;
             }
-            entity::Part::SelfClosingTag { name, attributes } => {
+            entity::Segment::SelfClosingTag { name, attributes } => {
                 write!(f, "<{name}")?;
                 for attribute in attributes {
                     write!(f, " {attribute}")?;
@@ -47,8 +47,8 @@ impl fmt::Display for entity::Part {
 
 impl fmt::Display for entity::Html {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for part in &self.parts {
-            write!(f, "{part}")?;
+        for segment in &self.segments {
+            write!(f, "{segment}")?;
         }
 
         Ok(())

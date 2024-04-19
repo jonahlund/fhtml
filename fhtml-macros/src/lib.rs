@@ -34,3 +34,28 @@ pub fn write(args: TokenStream) -> TokenStream {
     };
     output.into()
 }
+
+struct ConcatInput {
+    html: entity::Html,
+}
+
+impl Parse for ConcatInput {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let html = input.parse()?;
+
+        Ok(Self { html })
+    }
+}
+
+#[proc_macro]
+pub fn concat(args: TokenStream) -> TokenStream {
+    let ConcatInput { html } = syn::parse_macro_input!(args as ConcatInput);
+
+    let values = &html.values;
+    let html = html.to_string();
+
+    let output = quote! {
+        ::const_format::formatcp!(#html, #(#values),*)
+    };
+    output.into()
+}

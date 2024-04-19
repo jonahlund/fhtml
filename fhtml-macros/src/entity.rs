@@ -23,7 +23,7 @@ pub struct DashIdent {
     pub value: String,
 }
 
-pub enum Part {
+pub enum Segment {
     Value,
     OpeningTag {
         name: DashIdent,
@@ -39,6 +39,6 @@ pub enum Part {
 }
 
 pub struct Html {
-    pub parts: Vec<Part>,
+    pub segments: Vec<Segment>,
     pub values: Vec<Value>,
 }

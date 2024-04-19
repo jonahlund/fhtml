@@ -3,5 +3,9 @@ name = "fhtml"
 edition = "2021"
 version.workspace = true
 
+[features]
+concat = ["dep:const_format"]
+
 [dependencies]
+const_format = { version = "0.2.32", optional = true }
 fhtml-macros.path = "../fhtml-macros"
