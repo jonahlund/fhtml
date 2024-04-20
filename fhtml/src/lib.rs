@@ -1,4 +1,6 @@
 #[cfg(feature = "concat")]
+pub use const_format;
+#[cfg(feature = "concat")]
 pub use fhtml_macros::concat;
 pub use fhtml_macros::write;
 
