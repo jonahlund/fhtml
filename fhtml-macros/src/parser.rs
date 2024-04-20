@@ -1,3 +1,4 @@
+use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
 
 use crate::entity;
@@ -17,14 +18,15 @@ impl Parse for entity::Value {
 impl Parse for entity::DashIdent {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let mut value = String::new();
-        let ident: syn::Ident = input.parse()?;
-        value.push_str(&ident.to_string());
+
+        let mut part = input.call(syn::Ident::parse_any)?;
+        value.push_str(&part.to_string());
 
         while input.peek(syn::Token![-]) {
             input.parse::<syn::Token![-]>()?;
-            let ident: syn::Ident = input.parse()?;
+            part = input.call(syn::Ident::parse_any)?;
             value.push('-');
-            value.push_str(&ident.to_string());
+            value.push_str(&part.to_string());
         }
 
         Ok(entity::DashIdent { value })
@@ -56,7 +58,8 @@ impl Parse for entity::Html {
                 let name = input.parse()?;
                 let mut attributes = Vec::new();
 
-                while input.peek(syn::Ident) {
+                while !input.peek(syn::Token![/]) && !input.peek(syn::Token![>])
+                {
                     let name = input.parse()?;
                     input.parse::<syn::Token![=]>()?;
 

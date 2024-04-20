@@ -46,6 +46,10 @@ mod tests {
             self::format!(<span aria-hidden="true">"Hidden"</span>),
             r#"<span aria-hidden="true">Hidden</span>"#
         );
+        assert_eq!(
+            self::format!(<input type="email"/>),
+            r#"<input type="email"/>"#
+        );
     }
 
     #[test]
