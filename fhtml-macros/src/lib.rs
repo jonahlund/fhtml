@@ -55,7 +55,7 @@ pub fn concat(args: TokenStream) -> TokenStream {
     let html = html.to_string();
 
     let output = quote! {
-        ::const_format::formatcp!(#html, #(#values),*)
+        ::fhtml::const_format::formatcp!(#html, #(#values),*)
     };
     output.into()
 }
