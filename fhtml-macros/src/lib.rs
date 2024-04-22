@@ -336,7 +336,7 @@ impl Parse for WriteInput {
 /// - Similar to `std::write!`, errors during writing are handled by returning a
 ///   `Result` indicating either success (`Ok`) or an error (`Err`).
 /// - Ensure proper escaping or sanitization of user-generated content to
-///   prevent injection attacks when outputting HTML.#[proc_macro]
+///   prevent injection attacks when outputting HTML.
 #[proc_macro]
 pub fn write(input: TokenStream) -> TokenStream {
     let WriteInput {
