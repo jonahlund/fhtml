@@ -371,3 +371,17 @@ pub fn write(input: TokenStream) -> TokenStream {
 
     output.into()
 }
+
+#[proc_macro]
+pub fn formatcp(input: TokenStream) -> TokenStream {
+    let template = syn::parse_macro_input!(input as Template);
+
+    let values = &template.values;
+    let template = template.to_string();
+
+    let output = quote! {
+        ::fhtml::const_format::formatcp!(#template, #(#values),*)
+    };
+
+    output.into()
+}

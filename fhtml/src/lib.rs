@@ -1,4 +1,8 @@
-pub use fhtml_macros::*;
+#[cfg(feature = "const_format")]
+pub use const_format;
+#[cfg(feature = "const_format")]
+pub use fhtml_macros::formatcp;
+pub use fhtml_macros::write;
 
 #[macro_export]
 macro_rules! format {
