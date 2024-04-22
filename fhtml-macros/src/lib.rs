@@ -11,12 +11,16 @@ mod kw {
     syn::custom_keyword!(html);
 }
 
+/// Represents an identifier separated by dashes, e.g., `foo-bar-baz`.
 struct DashIdent(Punctuated<syn::Ident, syn::Token![-]>);
 
 impl fmt::Display for DashIdent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Iterate through the punctuated identifiers and format them with
+        // dashes in between.
         for pair in self.0.pairs() {
             std::write!(f, "{}", pair.value())?;
+            // If there's a punctuation, it's a dash, so we append it.
             if pair.punct().is_some() {
                 std::write!(f, "-")?;
             }
@@ -27,14 +31,17 @@ impl fmt::Display for DashIdent {
 
 impl Parse for DashIdent {
     fn parse(input: ParseStream) -> syn::Result<Self> {
+        // Parse a non-empty sequence of identifiers separated by dashes.
         Ok(Self(Punctuated::<syn::Ident, syn::Token![-]>::parse_separated_nonempty_with(input, syn::Ident::parse_any)?))
     }
 }
 
+/// Represents the DOCTYPE declaration in HTML, e.g., `<!DOCTYPE html>`.
 struct Doctype;
 
 impl Parse for Doctype {
     fn parse(input: ParseStream) -> syn::Result<Self> {
+        // Parse each component of the DOCTYPE declaration.
         input.parse::<syn::Token![<]>()?;
         input.parse::<syn::Token![!]>()?;
         input.parse::<kw::DOCTYPE>()?;
@@ -56,7 +63,7 @@ enum Value {
     /// A text literal, such as "Hello, World!"
     Text(syn::LitStr),
 
-    /// A 'braced' value, such as {1 + 1}
+    /// A 'braced' value, such as `{1 + 1}`.
     Braced(syn::Expr),
 }
 
@@ -71,6 +78,7 @@ impl Parse for Value {
         if input.peek(syn::LitStr) {
             Ok(Self::Text(input.parse()?))
         } else {
+            // Parse braced expressions.
             let expr;
             syn::braced!(expr in input);
             Ok(Self::Braced(expr.parse()?))
@@ -87,6 +95,7 @@ impl ToTokens for Value {
     }
 }
 
+/// Represents an HTML attribute, consisting of a name-value pair.
 struct Attribute {
     name: DashIdent,
     value: Value,
@@ -102,6 +111,8 @@ impl Parse for Attribute {
     }
 }
 
+/// Represents an HTML tag, which can be either a start tag with attributes and
+/// optional self-closing flag, or an end tag.
 enum Tag {
     Start {
         name: DashIdent,
@@ -122,59 +133,65 @@ impl fmt::Display for Tag {
                 self_closing,
             } => {
                 std::write!(f, "<{}", name)?;
-
                 for attr in attributes {
                     std::write!(f, " {}=\"{}\"", attr.name, attr.value)?;
                 }
-
                 if *self_closing {
                     std::write!(f, "/")?;
                 }
-
                 std::write!(f, ">")
             }
-            Tag::End { name } => {
-                std::write!(f, "</{}>", name)
-            }
+            Tag::End { name } => std::write!(f, "</{}>", name),
         }
     }
 }
 
 impl Parse for Tag {
+    /// Parses an HTML tag, which could be a start tag with attributes and an
+    /// optional self-closing indicator, or an end tag.
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let name;
-        let mut attributes = vec![];
-        let mut self_closing = false;
-
-        // The first token should always be `<`
+        // Parse the opening angle bracket
         input.parse::<syn::Token![<]>()?;
 
-        // If the second token is `/`, treat it as a closing tag
-        if input.peek(syn::Token![/]) {
+        // Check if it's an end tag
+        let forward_slash = input.peek(syn::Token![/]);
+        if forward_slash {
             input.parse::<syn::Token![/]>()?;
-            name = input.parse()?;
+
+            // Parse the tag name
+            let name: DashIdent = input.parse()?;
+
+            // Parse the closing '>'
             input.parse::<syn::Token![>]>()?;
 
-            return Ok(Self::End { name });
+            // Return the end tag variant
+            return Ok(Tag::End { name });
         }
 
-        name = input.parse()?;
+        // Parse the tag name for start tag
+        let name: DashIdent = input.parse()?;
 
+        // Parse attributes if any
+        let mut attributes = Vec::new();
         while !(input.peek(syn::Token![>])
             || (input.peek(syn::Token![/]) && input.peek2(syn::Token![>])))
         {
             attributes.push(input.parse()?);
         }
 
-        // If the second to last token is `/`, treat it as a self-closing tag
-        if input.peek(syn::Token![/]) {
+        // Check for self-closing tag
+        let self_closing = input.peek(syn::Token![/]);
+        if self_closing {
+            // Consume '/>'
             input.parse::<syn::Token![/]>()?;
-            self_closing = true;
+            input.parse::<syn::Token![>]>()?;
+        } else {
+            // Consume '>'
+            input.parse::<syn::Token![>]>()?;
         }
 
-        input.parse::<syn::Token![>]>()?;
-
-        Ok(Self::Start {
+        // Return the start tag variant
+        Ok(Tag::Start {
             name,
             attributes,
             self_closing,
@@ -183,13 +200,14 @@ impl Parse for Tag {
 }
 
 enum Segment {
-    /// An html doctype `<!DOCTYPE html>`
+    /// Represents an HTML `<!DOCTYPE html>` declaration.
     Doctype(Doctype),
 
-    /// An html tag
+    /// Represents an HTML tag, which may be a start tag, an end tag or a
+    /// self-closing tag.
     Tag(Tag),
 
-    /// An html value
+    /// Represents text or interpolated values within an HTML document.
     Value(Value),
 }
 
@@ -221,10 +239,10 @@ impl Parse for Segment {
 }
 
 struct Template {
-    // Segments
+    // Contains the segments of the HTML template.
     segments: Vec<Segment>,
 
-    /// Any values passed to the template
+    /// Stores values that are interpolated into the template.
     values: Vec<Value>,
 }
 
