@@ -1,8 +1,4 @@
-#[cfg(feature = "concat")]
-pub use const_format;
-#[cfg(feature = "concat")]
-pub use fhtml_macros::concat;
-pub use fhtml_macros::write;
+pub use fhtml_macros::*;
 
 #[macro_export]
 macro_rules! format {
@@ -68,16 +64,6 @@ mod tests {
         assert_eq!(
             self::format!(<div>"&lt;Encoded&gt;"</div>),
             "<div>&lt;Encoded&gt;</div>"
-        );
-    }
-
-    #[cfg(feature = "concat")]
-    #[test]
-    fn test_basic_concat() {
-        assert_eq!(self::concat!(<div></div>), "<div></div>".to_string());
-        assert_eq!(
-            self::concat!(<p>"Hello, World!"</p>),
-            "<p>Hello, World!</p>"
         );
     }
 }
