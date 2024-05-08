@@ -1,5 +1,9 @@
-#[cfg(feature = "const_format")]
-pub use const_format;
+#[doc(hidden)]
+pub mod _internal {
+    #[cfg(feature = "const_format")]
+    pub use ::const_format::*;
+}
+
 #[cfg(feature = "const_format")]
 pub use fhtml_macros::formatcp;
 pub use fhtml_macros::write;

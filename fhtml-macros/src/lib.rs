@@ -380,7 +380,7 @@ pub fn formatcp(input: TokenStream) -> TokenStream {
     let template = template.to_string();
 
     let output = quote! {
-        ::fhtml::const_format::formatcp!(#template, #(#values),*)
+        ::fhtml::_internal::formatcp!(#template, #(#values),*)
     };
 
     output.into()
