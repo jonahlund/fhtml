@@ -15,5 +15,5 @@ license = "MIT"
 const_format = ["dep:const_format"]
 
 [dependencies]
-fhtml-macros.path = "../fhtml-macros"
+fhtml-macros = { version = "0.1", path = "../fhtml-macros" }
 const_format = { version = "0.2", optional = true }
