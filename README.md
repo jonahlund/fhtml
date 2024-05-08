@@ -30,7 +30,7 @@ let output = fhtml::format! { <div>{1 + 2}</div> };
 
 assert_eq!(output, "<div>3</div>");
 ```
-Since these macros expands to `std::write!`, any values that can be used in `std::write!` can be used here.
+Since these macros expand to `std::write!`, any values that can be used in `std::write!` can be used here.
 
 ### Components
 ```rust
