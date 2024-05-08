@@ -60,7 +60,7 @@ let products = fhtml::format! {
 
 assert_eq!(products, "\
 <h1>Our products</h1>\
-<article><h2>Coffee</h2><h3>$4.99</h3>\
-</article><article><h2>Bread</h2><h3>$3.99</h3></article>\
+<article><h2>Coffee</h2><h3>$4.99</h3></article>\
+<article><h2>Bread</h2><h3>$3.99</h3></article>\
 ");
 ```
