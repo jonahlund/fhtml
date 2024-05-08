@@ -2,6 +2,14 @@
 name = "fhtml-macros"
 edition = "2021"
 version.workspace = true
+authors = ["Jonah Lund <jonahlund@proton.me>"]
+description = "Formatting macros tailored for HTML"
+homepage = "https://github.com/JonahLund/fhtml"
+repository = "https://github.com/JonahLund/fhtml"
+readme = "../README.md"
+keywords = ["html", "macro", "template", "formatting"]
+categories = ["template-engine", "value-formatting", "web-programming"]
+license = "MIT"
 
 [lib]
 proc-macro = true
