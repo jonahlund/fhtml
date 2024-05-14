@@ -11,7 +11,12 @@ keywords = ["html", "macro", "template", "formatting"]
 categories = ["template-engine", "value-formatting", "web-programming"]
 license = "MIT"
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
+default = []
 const_format = ["dep:const_format"]
 
 [dependencies]

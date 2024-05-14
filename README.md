@@ -1,6 +1,6 @@
 # fhtml
 
-`fhtml` is a crate that provides fast and straightforward macros for generating HTML content, similar to standard `write!` and `format!` macros, but tailored specifically for HTML output. This tool is ideal for applications requiring dynamic HTML generation.
+`fhtml` is a crate that provides fast and straightforward macros for generating HTML content, similar to standard `write!` and `format!` macros, but tailored specifically for HTML output.
 
 ## Installation
 
@@ -93,5 +93,3 @@ let user_input = "<script>alert('xss');</script>";
 let safe_output = fhtml::format! { <div>{fhtml::escape(user_input)}</div> };
 assert_eq!(safe_output, "<div>&lt;script&gt;alert('xss');&lt;/script&gt;</div>");
 ```
-
-Always consider the context in which you are inserting user-generated content and use `fhtml::escape` appropriately to avoid XSS vulnerabilities.

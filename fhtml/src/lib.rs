@@ -5,6 +5,8 @@
 //! This approach simplifies the creation of HTML, improving both its
 //! readability and ease of use.
 
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 #[doc(hidden)]
 pub mod _internal {
     #[cfg(feature = "const_format")]
@@ -77,11 +79,13 @@ macro_rules! format {
 /// ```
 ///
 /// More information can be found on [docs.rs](https://docs.rs/const_format).
+#[cfg_attr(docsrs, doc(cfg(feature = "const_format")))]
 #[cfg(feature = "const_format")]
 pub use fhtml_macros::formatcp;
 
-/// Escapes special HTML characters in a string to prevent XSS attacks
-/// or unintended HTML rendering. This function converts:
+/// Escapes special HTML characters in a string
+///
+/// This function converts:
 ///
 /// - `&` to `&amp;`
 /// - `<` to `&lt;`
