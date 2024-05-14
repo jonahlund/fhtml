@@ -91,5 +91,5 @@ Note that `fhtml` does not perform HTML escaping implicitly. This means any HTML
 ```rust
 let user_input = "<script>alert('xss');</script>";
 let safe_output = fhtml::format! { <div>{fhtml::escape(user_input)}</div> };
-assert_eq!(safe_output, "<div>&lt;script&gt;alert('xss');&lt;/script&gt;</div>");
+assert_eq!(safe_output, "<div>&lt;script&gt;alert(&#39;xss&#39;);&lt;/script&gt;</div>");
 ```
