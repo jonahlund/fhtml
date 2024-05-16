@@ -7,6 +7,13 @@ use crate::html;
 mod kw {
     syn::custom_keyword!(DOCTYPE);
     syn::custom_keyword!(html);
+    syn::custom_keyword!(x);
+    syn::custom_keyword!(X);
+    syn::custom_keyword!(o);
+    syn::custom_keyword!(p);
+    syn::custom_keyword!(b);
+    syn::custom_keyword!(e);
+    syn::custom_keyword!(E);
 }
 
 impl Parse for html::DashIdent {
@@ -28,6 +35,75 @@ impl Parse for html::Doctype {
     }
 }
 
+impl Parse for html::FormatSpecifier {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        // No formatting specifier is Display
+        if !input.peek(syn::Token![:]) {
+            return Ok(Self::Display);
+        }
+
+        input.parse::<syn::Token![:]>()?;
+
+        // Debug
+        if input.peek(syn::Token![?]) {
+            input.parse::<syn::Token![?]>()?;
+            return Ok(Self::Debug);
+        }
+
+        // Debug with lower-case hexadecimal integers
+        if input.peek(kw::x) {
+            input.parse::<kw::x>()?;
+            if input.peek(syn::Token![?]) {
+                input.parse::<syn::Token![?]>()?;
+                return Ok(Self::DebugLowerHex);
+            }
+            return Ok(Self::LowerHex);
+        }
+
+        // Debug with upper-case hexadecimal integers
+        if input.peek(kw::X) {
+            input.parse::<kw::X>()?;
+            if input.peek(syn::Token![?]) {
+                input.parse::<syn::Token![?]>()?;
+                return Ok(Self::DebugUpperHex);
+            }
+            return Ok(Self::UpperHex);
+        }
+
+        // Octal
+        if input.peek(kw::o) {
+            input.parse::<kw::o>()?;
+            return Ok(Self::Octal);
+        }
+
+        // Pointer
+        if input.peek(kw::p) {
+            input.parse::<kw::p>()?;
+            return Ok(Self::Pointer);
+        }
+
+        // Binary
+        if input.peek(kw::b) {
+            input.parse::<kw::b>()?;
+            return Ok(Self::Binary);
+        }
+
+        // LowerExp
+        if input.peek(kw::e) {
+            input.parse::<kw::e>()?;
+            return Ok(Self::LowerExp);
+        }
+
+        // UpperExp
+        if input.peek(kw::E) {
+            input.parse::<kw::E>()?;
+            return Ok(Self::UpperExp);
+        }
+
+        Err(input.error("invalid formatting specifier"))
+    }
+}
+
 impl Parse for html::Value {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         if input.peek(syn::LitStr) {
@@ -35,7 +111,7 @@ impl Parse for html::Value {
         } else {
             let expr;
             syn::braced!(expr in input);
-            Ok(Self::Braced(expr.parse()?))
+            Ok(Self::Braced(expr.parse()?, expr.parse()?))
         }
     }
 }

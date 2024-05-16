@@ -23,10 +23,32 @@ impl fmt::Display for html::Doctype {
     }
 }
 
+impl fmt::Display for html::FormatSpecifier {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            html::FormatSpecifier::Display => Ok(()),
+            html::FormatSpecifier::Debug => f.write_str(":?"),
+            html::FormatSpecifier::DebugLowerHex => f.write_str(":x?"),
+            html::FormatSpecifier::DebugUpperHex => f.write_str(":X?"),
+            html::FormatSpecifier::Octal => f.write_str(":o"),
+            html::FormatSpecifier::LowerHex => f.write_str(":x"),
+            html::FormatSpecifier::UpperHex => f.write_str(":X"),
+            html::FormatSpecifier::Pointer => f.write_str(":p"),
+            html::FormatSpecifier::Binary => f.write_str(":b"),
+            html::FormatSpecifier::LowerExp => f.write_str(":e"),
+            html::FormatSpecifier::UpperExp => f.write_str(":E"),
+        }
+    }
+}
+
 impl fmt::Display for html::Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Note: this is not the actual value but rather just braces `{}`
-        f.write_str("{}")
+        match self {
+            html::Value::Text(_) => f.write_str("{}"),
+            html::Value::Braced(_, format_specifier) => {
+                write!(f, "{{{format_specifier}}}")
+            }
+        }
     }
 }
 

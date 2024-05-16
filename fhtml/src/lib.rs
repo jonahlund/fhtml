@@ -174,26 +174,20 @@ mod tests {
     }
 
     #[test]
-    fn special_characters() {
+    fn formatting_specifiers() {
+        assert_eq!(self::format!(<div>{0..10:?}</div>), "<div>0..10</div>");
         assert_eq!(
-            self::format!(<div>"&lt;Encoded&gt;"</div>),
-            "<div>&lt;Encoded&gt;</div>"
+            self::format!(<div>{vec![0, 1, 2]:?}</div>),
+            "<div>[0, 1, 2]</div>"
         );
-    }
-
-    #[test]
-    fn escape_ampersand() {
-        assert_eq!(escape("&"), "&amp;");
-    }
-
-    #[test]
-    fn escape_angle_brackets() {
-        assert_eq!(escape("<>"), "&lt;&gt;");
-    }
-
-    #[test]
-    fn escape_quotes() {
-        assert_eq!(escape("\"'"), "&quot;&#39;");
+        assert_eq!(self::format!(<div>{10:x?}</div>), "<div>a</div>");
+        assert_eq!(self::format!(<div>{10:X?}</div>), "<div>A</div>");
+        assert_eq!(self::format!(<div>{10:o}</div>), "<div>12</div>");
+        assert_eq!(self::format!(<div>{10:x}</div>), "<div>a</div>");
+        assert_eq!(self::format!(<div>{10:X}</div>), "<div>A</div>");
+        assert_eq!(self::format!(<div>{10:b}</div>), "<div>1010</div>");
+        assert_eq!(self::format!(<div>{10:e}</div>), "<div>1e1</div>");
+        assert_eq!(self::format!(<div>{10:E}</div>), "<div>1E1</div>");
     }
 
     #[test]

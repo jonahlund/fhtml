@@ -7,20 +7,35 @@ pub struct DashIdent(pub Punctuated<syn::Ident, syn::Token![-]>);
 /// Represents the DOCTYPE declaration in HTML, e.g., `<!DOCTYPE html>`.
 pub struct Doctype;
 
+#[derive(Clone, Copy)]
+pub enum FormatSpecifier {
+    Display,
+    Debug,
+    DebugLowerHex,
+    DebugUpperHex,
+    Octal,
+    LowerHex,
+    UpperHex,
+    Pointer,
+    Binary,
+    LowerExp,
+    UpperExp,
+}
+
 #[derive(Clone)]
 pub enum Value {
     /// A text literal, such as "Hello, World!"
     Text(syn::LitStr),
 
     /// A 'braced' value, such as `{1 + 1}`.
-    Braced(syn::Expr),
+    Braced(syn::Expr, FormatSpecifier),
 }
 
 impl ToTokens for Value {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         match self {
             Value::Text(lit) => lit.to_tokens(tokens),
-            Value::Braced(expr) => expr.to_tokens(tokens),
+            Value::Braced(expr, _) => expr.to_tokens(tokens),
         }
     }
 }
