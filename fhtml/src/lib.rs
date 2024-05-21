@@ -58,7 +58,7 @@ macro_rules! format {
 ///
 /// ```
 /// let raw = "Hello, <world> & 'friends'";
-/// let escaped = escape(raw);
+/// let escaped = fhtml::escape(raw);
 /// assert_eq!(escaped, "Hello, &lt;world&gt; &amp; &#39;friends&#39;");
 /// ```
 ///
