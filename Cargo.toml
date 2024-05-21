@@ -3,4 +3,13 @@ resolver = "2"
 members = ["fhtml", "fhtml-macros"]
 
 [workspace.package]
-version = "0.2.1"
+edition = "2021"
+version = "0.3.0"
+authors = ["Jonah Lund <jonahlund@proton.me>"]
+description = "Formatting macros tailored for HTML"
+homepage = "https://github.com/JonahLund/fhtml"
+repository = "https://github.com/JonahLund/fhtml"
+readme = "./README.md"
+keywords = ["html", "macro", "template", "formatting"]
+categories = ["template-engine", "value-formatting", "web-programming"]
+license = "MIT"

@@ -1,57 +1,71 @@
 # fhtml
 
-`fhtml` is a crate that provides fast and straightforward macros for generating HTML content, similar to standard `write!` and `format!` macros, but tailored specifically for HTML output.
+Simple and efficient macros for writing HTML in Rust
+
+## Overview
+
+`fhtml` Provides formatting macros for writing HTML without the annoyance of dealing with HTML inside string literals. A few highlights:
+
+- **simplicity:** No complex templating syntax, just plain HTML with embedded expressions and format specifiers
+- **zero extra allocations:** `fhtml` macros expand to their `std` counterpart with no indirections or added allocations
+- **compatibility:** No custom traits, just use idiomatic Rust such as `fmt::Display` to create components, or integrate with existing code that implements `fmt::Display`
+- **safety:** `fhtml` Provides an easy way to escape values (escaping is *NOT* done implicitly)
 
 ## Installation
 
-Add `fhtml` to your project by including it in your `Cargo.toml` file:
+In your Cargo.toml:
 
 ```toml
-[dependencies]
-fhtml = "0.2"
+fhtml = "0.3"
 ```
 
-## Quick Start
+## Syntax
 
-### Basic Formatting
+- HTML is typed as-is, unquoted:
+```rust
+fhtml::format!(<input />);
+```
+- Expressions are passed in using braces:
+```rust
+fhtml::format!(<div>{1 + 1}</div>);
+```
+- Text is quoted:
+```rust
+fhtml::format!(<p>"Some text"</p>);
+```
+- Format specifiers are written after expressions:
+```rust
+fhtml::format!(<code>{vec![1, 2, 3]:?}</code>);
+```
+- Escaping is done by using an exclamation mark `!` as a format specifier:
+```rust
+fhtml::format!(<div>{"<b>Dangerous input</b>":!}</div>);
+```
+This being the only format specifier deviating from the [std::fmt syntax](https://doc.rust-lang.org/stable/std/fmt/index.html#syntax)
 
-Generate simple HTML strings with `fhtml::format!`. This macro behaves similarly to `format!`, but for HTML:
+## Usage
+
+### Writing to a buffer
 
 ```rust
-let output = fhtml::format! { <div>"Hello, World!"</div> };
-assert_eq!(output, "<div>Hello, World!</div>");
+let mut buffer = String::new();
+fhtml::write!(buffer, <div>"Hello, World!"</div>);
 ```
 
-### Writing to a Buffer
-
-Directly write HTML to a buffer using `fhtml::write!`:
+### Escaping
 
 ```rust
-let mut output = String::new();
-let _ = fhtml::write! { output, <div>"Hello, World!"</div> };
-assert_eq!(output, "<div>Hello, World!</div>");
+let user_input = "<b>Dangerous input</b>";
+fhtml::format!(<div>{user_input:!}</div>); // "<div>&lt;b&gt;Dangerous input&lt;/b&gt;</div>"
 ```
 
-### Incorporating Expressions
-
-Embed expressions within HTML content:
-
-```rust
-let output = fhtml::format! { <div>{1 + 2}</div> };
-assert_eq!(output, "<div>3</div>");
-```
-
-These macros expand to `std::write!`, supporting any compatible values.
-
-### Custom Components via Display Trait
-
-Create reusable HTML components by implementing `std::fmt::Display`:
+### Components
 
 ```rust
 use std::fmt;
 
 struct Product {
-    name: String,
+    name: &'static str,
     price: f32,
 }
 
@@ -60,7 +74,7 @@ impl fmt::Display for Product {
         fhtml::write! { f,
             <article>
                 <h2>{self.name}</h2>
-                <h3>"$"{self.price}</h3>
+                <h3>"$" {self.price}</h3>
             </article>
         }
     }
@@ -69,27 +83,33 @@ impl fmt::Display for Product {
 let products = fhtml::format! {
     <h1>"Our products"</h1>
     {Product {
-      name: "Coffee".to_string(),
-      price: 4.99
-    }}
-    {Product {
-      name: "Bread".to_string(),
+      name: "Arabica Coffee Beans",
       price: 3.99
     }}
+    {Product {
+      name: "Sourdough Bread",
+      price: 2.49
+    }}
 };
-
-assert_eq!(products,
-"<h1>Our products</h1>\
-<article><h2>Coffee</h2><h3>$4.99</h3></article>\
-<article><h2>Bread</h2><h3>$3.99</h3></article>");
 ```
 
-### HTML Escaping
-
-Note that `fhtml` does not perform HTML escaping implicitly. This means any HTML special characters included in strings will not be escaped automatically. To ensure your HTML content is secure from injection attacks, you can manually escape content using `fhtml::escape`:
+### Formatting specifiers
 
 ```rust
-let user_input = "<script>alert('xss');</script>";
-let safe_output = fhtml::format! { <div>{fhtml::escape(user_input)}</div> };
-assert_eq!(safe_output, "<div>&lt;script&gt;alert(&#39;xss&#39;);&lt;/script&gt;</div>");
+fhtml::format!(<code>{vec![1, 2, 3]:?}</code>); // "<code>[1, 2, 3]</code>"
+fhtml::format!(<span>{10:#b}</span>);           // "<span>0b1010</span>"
+```
+
+### Iterators
+
+```rust
+fhtml::format! {
+    <ul>
+        {
+            (0..10).map(|i| fhtml::format!(
+                <li>{i}</li>
+            )).collect::<Vec<_>>().join("")
+        }
+    </ul>
+}
 ```

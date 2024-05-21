@@ -1,14 +1,13 @@
 use std::fmt::{self, Write};
 
-use crate::html;
+use crate::html::{
+    Attribute, DashIdent, Doctype, Segment, Tag, Template, Value,
+};
 
-impl fmt::Display for html::DashIdent {
+impl fmt::Display for DashIdent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Iterate through the punctuated identifiers and format them with
-        // dashes in between.
         for pair in self.0.pairs() {
-            std::write!(f, "{}", pair.value())?;
-            // If there's a punctuation, it's a dash, so we append it.
+            pair.value().fmt(f)?;
             if pair.punct().is_some() {
                 f.write_char('-')?;
             }
@@ -17,74 +16,61 @@ impl fmt::Display for html::DashIdent {
     }
 }
 
-impl fmt::Display for html::Doctype {
+impl fmt::Display for Doctype {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("<!DOCTYPE html>")
     }
 }
 
-impl fmt::Display for html::FormatSpecifier {
+impl fmt::Display for Tag {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            html::FormatSpecifier::Display => Ok(()),
-            html::FormatSpecifier::Debug => f.write_str(":?"),
-            html::FormatSpecifier::DebugLowerHex => f.write_str(":x?"),
-            html::FormatSpecifier::DebugUpperHex => f.write_str(":X?"),
-            html::FormatSpecifier::Octal => f.write_str(":o"),
-            html::FormatSpecifier::LowerHex => f.write_str(":x"),
-            html::FormatSpecifier::UpperHex => f.write_str(":X"),
-            html::FormatSpecifier::Pointer => f.write_str(":p"),
-            html::FormatSpecifier::Binary => f.write_str(":b"),
-            html::FormatSpecifier::LowerExp => f.write_str(":e"),
-            html::FormatSpecifier::UpperExp => f.write_str(":E"),
-        }
-    }
-}
-
-impl fmt::Display for html::Value {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            html::Value::Text(_) => f.write_str("{}"),
-            html::Value::Braced(_, format_specifier) => {
-                write!(f, "{{{format_specifier}}}")
-            }
-        }
-    }
-}
-
-impl fmt::Display for html::Tag {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            html::Tag::Start {
+            Self::Start {
                 name,
                 attributes,
                 self_closing,
             } => {
-                std::write!(f, "<{name}")?;
-                for html::Attribute { name, value } in attributes {
-                    std::write!(f, " {name}=\"{value}\"")?;
+                write!(f, "<{name}")?;
+                for Attribute { name, value } in attributes {
+                    write!(f, " {name}=\"{value}\"")?;
                 }
                 if *self_closing {
-                    f.write_char('/')?;
+                    write!(f, " /")?;
                 }
-                f.write_char('>')
+                write!(f, ">")
             }
-            html::Tag::End { name } => std::write!(f, "</{name}>"),
+            Self::End { name } => write!(f, "</{name}>"),
         }
     }
 }
 
-impl fmt::Display for html::Segment {
+impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            html::Segment::Doctype(doctype) => doctype.fmt(f),
-            html::Segment::Tag(tag) => tag.fmt(f),
-            html::Segment::Value(value) => value.fmt(f),
+            Self::Text(_) => f.write_str("{}"),
+            Self::Braced { params, .. } => {
+                write!(f, "{{")?;
+                if let Some(params) = params {
+                    write!(f, ":")?;
+                    params.to_string().replace(' ', "").fmt(f)?;
+                }
+                write!(f, "}}")
+            }
         }
     }
 }
 
-impl fmt::Display for html::Template {
+impl fmt::Display for Segment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Doctype(doctype) => doctype.fmt(f),
+            Self::Tag(tag) => tag.fmt(f),
+            Self::Value(value) => value.fmt(f),
+        }
+    }
+}
+
+impl fmt::Display for Template {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for segment in &self.segments {
             segment.fmt(f)?;

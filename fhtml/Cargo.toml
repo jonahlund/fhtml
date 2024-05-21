@@ -1,15 +1,15 @@
 [package]
 name = "fhtml"
-edition = "2021"
+edition.workspace = true
 version.workspace = true
-authors = ["Jonah Lund <jonahlund@proton.me>"]
-description = "Formatting macros tailored for HTML"
-homepage = "https://github.com/JonahLund/fhtml"
-repository = "https://github.com/JonahLund/fhtml"
-readme = "../README.md"
-keywords = ["html", "macro", "template", "formatting"]
-categories = ["template-engine", "value-formatting", "web-programming"]
-license = "MIT"
+authors.workspace = true
+description.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+license.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true
@@ -17,8 +17,8 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = []
-const_format = ["dep:const_format"]
+const-format = ["dep:const_format"]
 
 [dependencies]
-fhtml-macros = { version = "0.2", path = "../fhtml-macros" }
+fhtml-macros = { version = "0.3", path = "../fhtml-macros" }
 const_format = { version = "0.2", optional = true }
