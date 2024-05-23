@@ -1,10 +1,8 @@
 use std::fmt::{self, Write};
 
-use crate::html::{
-    Attribute, DashIdent, Doctype, Segment, Tag, Template, Value,
-};
+use crate::ast;
 
-impl fmt::Display for DashIdent {
+impl fmt::Display for ast::DashIdent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for pair in self.0.pairs() {
             pair.value().fmt(f)?;
@@ -16,13 +14,13 @@ impl fmt::Display for DashIdent {
     }
 }
 
-impl fmt::Display for Doctype {
+impl fmt::Display for ast::Doctype {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("<!DOCTYPE html>")
     }
 }
 
-impl fmt::Display for Tag {
+impl fmt::Display for ast::Tag {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Start {
@@ -31,7 +29,7 @@ impl fmt::Display for Tag {
                 self_closing,
             } => {
                 write!(f, "<{name}")?;
-                for Attribute { name, value } in attributes {
+                for ast::Attr { name, value } in attributes {
                     write!(f, " {name}=\"{value}\"")?;
                 }
                 if *self_closing {
@@ -44,15 +42,15 @@ impl fmt::Display for Tag {
     }
 }
 
-impl fmt::Display for Value {
+impl fmt::Display for ast::Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Text(_) => f.write_str("{}"),
-            Self::Braced { params, .. } => {
+            Self::Braced { specs, .. } => {
                 write!(f, "{{")?;
-                if let Some(params) = params {
+                if let Some(specs) = specs {
                     write!(f, ":")?;
-                    params.to_string().replace(' ', "").fmt(f)?;
+                    specs.to_string().replace(' ', "").fmt(f)?;
                 }
                 write!(f, "}}")
             }
@@ -60,7 +58,7 @@ impl fmt::Display for Value {
     }
 }
 
-impl fmt::Display for Segment {
+impl fmt::Display for ast::Segment {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Doctype(doctype) => doctype.fmt(f),
@@ -70,7 +68,7 @@ impl fmt::Display for Segment {
     }
 }
 
-impl fmt::Display for Template {
+impl fmt::Display for ast::Template {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for segment in &self.segments {
             segment.fmt(f)?;

@@ -8,7 +8,7 @@ pub struct Doctype;
 pub enum Tag {
     Start {
         name: DashIdent,
-        attributes: Vec<Attribute>,
+        attributes: Vec<Attr>,
         self_closing: bool,
     },
     End {
@@ -16,7 +16,7 @@ pub enum Tag {
     },
 }
 
-pub struct Attribute {
+pub struct Attr {
     pub name: DashIdent,
     pub value: Value,
 }
@@ -25,8 +25,8 @@ pub struct Attribute {
 pub enum Value {
     Text(syn::LitStr),
     Braced {
-        value: syn::Expr,
-        params: Option<TokenStream>,
+        content: syn::Expr,
+        specs: Option<TokenStream>,
         escape: bool,
     },
 }
@@ -34,15 +34,17 @@ pub enum Value {
 impl ToTokens for Value {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         match self {
-            Value::Text(lit) => lit.to_tokens(tokens),
-            Value::Braced { value, escape, .. } => {
+            Value::Text(content) => content.to_tokens(tokens),
+            Value::Braced {
+                content, escape, ..
+            } => {
                 if *escape {
                     quote! {
-                        ::fhtml::escape(#value)
+                        ::fhtml::escape(#content)
                     }
                     .to_tokens(tokens)
                 } else {
-                    value.to_tokens(tokens)
+                    content.to_tokens(tokens)
                 }
             }
         }
@@ -58,4 +60,10 @@ pub enum Segment {
 pub struct Template {
     pub segments: Vec<Segment>,
     pub values: Vec<Value>,
+}
+
+impl ToTokens for Template {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.to_string().to_tokens(tokens);
+    }
 }

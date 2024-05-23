@@ -1,14 +1,56 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-#[cfg_attr(docsrs, doc(cfg(feature = "const-format")))]
-#[cfg(feature = "const-format")]
-pub use fhtml_macros::formatcp;
-pub use fhtml_macros::write;
+#[cfg_attr(docsrs, doc(cfg(feature = "const")))]
+#[cfg(feature = "const")]
+pub use fhtml_macros::const_format;
+pub use fhtml_macros::format_args;
 
 #[doc(hidden)]
 pub mod _internal {
-    #[cfg(feature = "const-format")]
+    #[cfg(feature = "const")]
     pub use ::const_format::*;
+}
+
+/// Writes formatted HTML to a buffer.
+///
+/// `fhtml::write!` works similar to [`std::write!`] with a few key differences:
+/// - HTML can be written as-is without having to be inside a string literal.
+/// - Expressions are written directly inside braces, compared to
+///   [`std::write!`], where they are passed as separate parameters.
+///
+/// Formatting specifiers are written after expressions, denoted by
+/// a colon `:`, similar to how they are written in [`std::write!`].
+///
+/// Values are not escaped implicitly, but are opt-in with an exclamation mark
+/// `!` preceding any formatting specifiers:
+/// `{[expr]:![specifiers]}`.
+///
+/// [`std::write!`]: std::write
+///
+/// # Examples
+///
+/// ## Simple usage
+///
+/// ```rust
+/// use std::fmt::Write;
+/// let mut buffer = String::new();
+/// let _ = fhtml::write!(buffer, <div>"Hello, World!"</div>);
+/// assert_eq!(buffer,  "<div>Hello, World!</div>");
+/// ```
+///
+/// ## Escaping values
+///
+/// ```rust
+/// use std::fmt::Write;
+/// let mut buffer = String::new();
+/// let _ = fhtml::write!(buffer, <div>{"<b>foo</b>":!}</div>);
+/// assert_eq!(buffer, "<div>&lt;b&gt;foo&lt;/b&gt;</div>");
+/// ```
+#[macro_export]
+macro_rules! write {
+    ($dst:expr, $($arg:tt)*) => {{
+        $dst.write_fmt($crate::format_args!($($arg)*))
+    }};
 }
 
 /// Writes formatted HTML to a `String`.
@@ -27,16 +69,14 @@ pub mod _internal {
 /// ## Simple usage
 ///
 /// ```rust
+/// use std::fmt::Write;
 /// fhtml::format!(<div>"Hello, World!"</div>); // "<div>Hello, World!</div>"
 /// ```
 #[macro_export]
 macro_rules! format {
-    ($($t:tt)*) => {{
-        use ::std::fmt::Write;
-
-        let mut output = String::new();
-        let _ = $crate::write!(output, $($t)*);
-        output
+    ($($arg:tt)*) => {{
+        let res = ::std::fmt::format($crate::format_args!($($arg)*));
+        res
     }};
 }
 

@@ -15,6 +15,7 @@ fn empty_tags() {
 
 #[test]
 fn nested_tags() {
+    fhtml::format_args!(<div></div>);
     assert_eq!(
         fhtml::format!(<div><span></span></div>),
         "<div><span></span></div>"

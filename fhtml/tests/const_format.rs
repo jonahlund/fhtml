@@ -1,4 +1,4 @@
-#![cfg(feature = "const-format")]
+#![cfg(feature = "const")]
 
 #[test]
 fn valid_expressions() {
