@@ -22,4 +22,3 @@ const = ["dep:const_format"]
 [dependencies]
 fhtml-macros = { version = "0.4", path = "../fhtml-macros" }
 const_format = { version = "0.2", optional = true }
-lazy_format = { version = "2.0.3", optional = true }

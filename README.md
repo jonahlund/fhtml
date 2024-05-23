@@ -8,7 +8,7 @@ Simple and efficient macros for writing HTML in Rust
 
 - **simplicity:** no complex templating syntax, just plain HTML with embedded expressions and format specifiers
 - **zero extra allocations:** `fhtml` macros expand to their `std` counterpart with no indirections or added allocations
-- **compatibility:** since `fhtml` is simply a wrapper over `std` macros, you can easily use idiomatic Rust, such as implementing `fmt::Display` or `fmt::Write` for creating components, or integrate with existing libraries and tools
+- **compatibility:** since `fhtml` is simply a wrapper over `std` macros, meaning that you can easily use idiomatic Rust, such as implementing `fmt::Display` or `fmt::Write` for creating components, or integrate with existing libraries and tools
 - **safety:** `fhtml` provides an easy way to escape values (escaping is *NOT* done implicitly)
 
 ## Installation
