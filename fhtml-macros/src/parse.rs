@@ -2,9 +2,7 @@ use syn::ext::IdentExt as _;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 
-use crate::html::{
-    Attribute, DashIdent, Doctype, Segment, Tag, Template, Value,
-};
+use crate::ast;
 
 mod kw {
     syn::custom_keyword!(DOCTYPE);
@@ -12,14 +10,19 @@ mod kw {
     syn::custom_keyword!(html);
 }
 
-impl Parse for DashIdent {
+impl Parse for ast::DashIdent {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         // Parse a non-empty sequence of identifiers separated by dashes.
-        Ok(Self(Punctuated::<syn::Ident, syn::Token![-]>::parse_separated_nonempty_with(input, syn::Ident::parse_any)?))
+        Ok(Self(
+            Punctuated::<syn::Ident, syn::Token![-]>::parse_separated_nonempty_with(
+                input,
+                syn::Ident::parse_any,
+            )?
+        ))
     }
 }
 
-impl Parse for Doctype {
+impl Parse for ast::Doctype {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         input.parse::<syn::Token![<]>()?;
         input.parse::<syn::Token![!]>()?;
@@ -35,7 +38,7 @@ impl Parse for Doctype {
     }
 }
 
-impl Parse for Tag {
+impl Parse for ast::Tag {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         input.parse::<syn::Token![<]>()?;
 
@@ -71,7 +74,7 @@ impl Parse for Tag {
     }
 }
 
-impl Parse for Attribute {
+impl Parse for ast::Attr {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let name = input.parse()?;
         input.parse::<syn::Token![=]>()?;
@@ -81,7 +84,7 @@ impl Parse for Attribute {
     }
 }
 
-impl Parse for Value {
+impl Parse for ast::Value {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         if input.peek(syn::LitStr) {
             Ok(Self::Text(input.parse()?))
@@ -90,7 +93,7 @@ impl Parse for Value {
             syn::braced!(content in input);
 
             let value = content.parse()?;
-            let mut params = None;
+            let mut specs = None;
             let mut escape = false;
 
             if content.peek(syn::Token![:]) {
@@ -100,20 +103,20 @@ impl Parse for Value {
                     escape = true;
                 }
                 if !content.is_empty() {
-                    params = Some(content.parse()?);
+                    specs = Some(content.parse()?);
                 }
             }
 
             Ok(Self::Braced {
-                value,
-                params,
+                content: value,
+                specs,
                 escape,
             })
         }
     }
 }
 
-impl Parse for Segment {
+impl Parse for ast::Segment {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         if input.peek(syn::Token![<])
             && input.peek2(syn::Token![!])
@@ -130,21 +133,21 @@ impl Parse for Segment {
     }
 }
 
-impl Parse for Template {
+impl Parse for ast::Template {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let mut segments = vec![];
         let mut values = vec![];
 
         while !input.is_empty() {
-            let segment = input.parse::<Segment>()?;
+            let segment = input.parse::<ast::Segment>()?;
 
             match &segment {
-                Segment::Tag(Tag::Start { attributes, .. }) => {
+                ast::Segment::Tag(ast::Tag::Start { attributes, .. }) => {
                     for attr in attributes {
                         values.push(attr.value.clone());
                     }
                 }
-                Segment::Value(value) => {
+                ast::Segment::Value(value) => {
                     values.push(value.clone());
                 }
                 _ => {}
