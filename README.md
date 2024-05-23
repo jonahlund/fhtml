@@ -128,9 +128,12 @@ fhtml::format!(<span>{10:#b}</span>);           // "<span>0b1010</span>"
 fhtml::format! {
     <ul>
         {
-            (0..10).map(|i| fhtml::format!(
-                <li>{i}</li>
-            )).collect::<Vec<_>>().join("")
+            (0..10).fold(String::new(), |mut f, i| {
+                let _ = fhtml::write! { f,
+                    <li>{i}</li>
+                };
+                f
+            })
         }
     </ul>
 }
