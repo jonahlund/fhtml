@@ -100,7 +100,7 @@ impl fmt::Display for ast::Value {
         }
 
         match self {
-            Self::Text(text) => f.write_str(&text.value()),
+            Self::Text(_) => f.write_str("{}"),
             Self::Braced(braced) => {
                 write!(f, "{{")?;
                 if let Some(specs) = &braced.specs {
