@@ -15,7 +15,6 @@ fn empty_tags() {
 
 #[test]
 fn nested_tags() {
-    fhtml::format_args!(<div></div>);
     assert_eq!(
         fhtml::format!(<div><span></span></div>),
         "<div><span></span></div>"
@@ -157,4 +156,16 @@ fn expressions_binary() {
 #[test]
 fn expressions_binary_alternate() {
     assert_eq!(fhtml::format!(<div>{10:#b}</div>), "<div>0b1010</div>");
+}
+
+#[test]
+fn braces_in_values() {
+    assert_eq!(fhtml::format!(<div>"{}"</div>), "<div>{}</div>");
+    assert_eq!(fhtml::format!(<div>"{{}}"</div>), "<div>{{}}</div>");
+    assert_eq!(fhtml::format!(<div>"{"</div>), "<div>{</div>");
+    assert_eq!(fhtml::format!(<div>"{{"</div>), "<div>{{</div>");
+    assert_eq!(fhtml::format!(<div>"{{{}"</div>), "<div>{{{}</div>");
+    assert_eq!(fhtml::format!(<div>"}"</div>), "<div>}</div>");
+    assert_eq!(fhtml::format!(<div>"}}"</div>), "<div>}}</div>");
+    assert_eq!(fhtml::format!(<div>"{}}}"</div>), "<div>{}}}</div>");
 }

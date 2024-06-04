@@ -22,31 +22,38 @@ pub struct Attr {
 }
 
 #[derive(Clone)]
+pub struct BracedValue {
+    pub value: syn::Expr,
+    pub specs: Option<TokenStream>,
+    pub escape: bool,
+}
+
+impl ToTokens for BracedValue {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let value = &self.value;
+
+        if self.escape {
+            quote! {
+                ::fhtml::escape(#value)
+            }
+            .to_tokens(tokens)
+        } else {
+            value.to_tokens(tokens)
+        }
+    }
+}
+
+#[derive(Clone)]
 pub enum Value {
     Text(syn::LitStr),
-    Braced {
-        content: syn::Expr,
-        specs: Option<TokenStream>,
-        escape: bool,
-    },
+    Braced(BracedValue),
 }
 
 impl ToTokens for Value {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         match self {
-            Value::Text(content) => content.to_tokens(tokens),
-            Value::Braced {
-                content, escape, ..
-            } => {
-                if *escape {
-                    quote! {
-                        ::fhtml::escape(#content)
-                    }
-                    .to_tokens(tokens)
-                } else {
-                    content.to_tokens(tokens)
-                }
-            }
+            Value::Text(value) => value.to_tokens(tokens),
+            Value::Braced(value) => value.to_tokens(tokens),
         }
     }
 }

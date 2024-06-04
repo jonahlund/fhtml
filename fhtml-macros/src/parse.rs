@@ -107,11 +107,11 @@ impl Parse for ast::Value {
                 }
             }
 
-            Ok(Self::Braced {
-                content: value,
+            Ok(Self::Braced(ast::BracedValue {
+                value,
                 specs,
                 escape,
-            })
+            }))
         }
     }
 }
@@ -144,11 +144,15 @@ impl Parse for ast::Template {
             match &segment {
                 ast::Segment::Tag(ast::Tag::Start { attributes, .. }) => {
                     for attr in attributes {
-                        values.push(attr.value.clone());
+                        if attr.value.inlined().is_none() {
+                            values.push(attr.value.clone());
+                        }
                     }
                 }
                 ast::Segment::Value(value) => {
-                    values.push(value.clone());
+                    if value.inlined().is_none() {
+                        values.push(value.clone());
+                    }
                 }
                 _ => {}
             };
