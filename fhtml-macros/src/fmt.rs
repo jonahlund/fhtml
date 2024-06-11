@@ -1,4 +1,7 @@
-use std::fmt::{self, Write};
+use std::fmt;
+
+use quote::ToTokens;
+use tiny_rsx as rsx;
 
 use crate::ast;
 
@@ -20,28 +23,10 @@ fn escape_braces(input: &str) -> String {
     output
 }
 
-impl fmt::Display for ast::DashIdent {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for pair in self.0.pairs() {
-            pair.value().fmt(f)?;
-            if pair.punct().is_some() {
-                f.write_char('-')?;
-            }
-        }
-        Ok(())
-    }
-}
-
-impl fmt::Display for ast::Doctype {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("<!DOCTYPE html>")
-    }
-}
-
 impl fmt::Display for ast::Tag {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Start {
+            ast::Tag::Start {
                 name,
                 attributes,
                 self_closing,
@@ -55,7 +40,7 @@ impl fmt::Display for ast::Tag {
                 }
                 write!(f, ">")
             }
-            Self::End { name } => write!(f, "</{name}>"),
+            ast::Tag::End { name } => write!(f, "</{name}>"),
         }
     }
 }
@@ -68,26 +53,12 @@ impl ast::Value {
             ast::Value::Text(text) => Some(text.value()),
             // Braced values are inlined in some cases
             ast::Value::Braced(braced) => {
-                if braced.specs.is_some() || braced.escape {
+                if braced.specs.is_some() || braced.escape_flag {
                     return None;
                 }
 
-                match &braced.value {
-                    syn::Expr::Lit(expr_lit) => match &expr_lit.lit {
-                        syn::Lit::Str(str) => Some(str.value()),
-                        syn::Lit::Byte(byte) => Some(byte.value().to_string()),
-                        syn::Lit::Char(char) => Some(char.value().to_string()),
-                        syn::Lit::Int(int) => {
-                            Some(int.base10_digits().to_string())
-                        }
-                        syn::Lit::Float(float) => {
-                            Some(float.base10_digits().to_string())
-                        }
-                        syn::Lit::Bool(bool) => Some(bool.value().to_string()),
-                        _ => None,
-                    },
-                    _ => None,
-                }
+                rsx::Value::Braced(braced.value.clone().into_token_stream())
+                    .inlined()
             }
         }
     }
@@ -116,9 +87,9 @@ impl fmt::Display for ast::Value {
 impl fmt::Display for ast::Segment {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Doctype(doctype) => doctype.fmt(f),
-            Self::Tag(tag) => tag.fmt(f),
-            Self::Value(value) => value.fmt(f),
+            ast::Segment::Doctype(doctype) => doctype.fmt(f),
+            ast::Segment::Tag(tag) => tag.fmt(f),
+            ast::Segment::Value(value) => value.fmt(f),
         }
     }
 }

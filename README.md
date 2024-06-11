@@ -1,6 +1,6 @@
 # fhtml
 
-Simple and efficient macros for writing HTML in Rust
+Std-compatible HTML formatting macros
 
 ## Overview
 
