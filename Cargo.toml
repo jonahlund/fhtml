@@ -4,7 +4,7 @@ members = ["fhtml", "fhtml-macros"]
 
 [workspace.package]
 edition = "2021"
-version = "0.4.1"
+version = "0.5.0"
 authors = ["Jonah Lund <jonahlund@proton.me>"]
 description = "Formatting macros tailored for HTML"
 homepage = "https://github.com/JonahLund/fhtml"
