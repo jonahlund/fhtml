@@ -11,15 +11,6 @@ Std-compatible HTML formatting macros
 - **compatibility:** since `fhtml` is simply a wrapper over `std` macros, meaning that you can easily use idiomatic Rust, such as implementing `fmt::Display` or `fmt::Write` for creating components, or integrate with existing libraries and tools
 - **safety:** `fhtml` provides an easy way to escape values (escaping is *NOT* done implicitly)
 
-## Installation
-
-In your `Cargo.toml`:
-
-```toml
-[dependencies]
-fhtml = "0.4"
-```
-
 ## Syntax
 
 - HTML is typed as-is, unquoted:
