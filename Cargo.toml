@@ -1,15 +1,22 @@
 [workspace]
-resolver = "2"
-members = ["fhtml", "fhtml-macros"]
+members = ["macros"]
 
-[workspace.package]
+[package]
+name = "fhtml"
 edition = "2021"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Jonah Lund <jonahlund@proton.me>"]
-description = "Formatting macros tailored for HTML"
+description = "Std-compatible HTML formatting macros"
 homepage = "https://github.com/JonahLund/fhtml"
 repository = "https://github.com/JonahLund/fhtml"
 readme = "./README.md"
 keywords = ["html", "macro", "template", "formatting"]
 categories = ["template-engine", "value-formatting", "web-programming"]
 license = "MIT"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+fhtml-macros = { version = "0.5", path = "macros" }
