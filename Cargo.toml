@@ -19,4 +19,4 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-fhtml-macros = { version = "0.5", path = "macros" }
+fhtml-macros = { version = "0.6", path = "macros" }
