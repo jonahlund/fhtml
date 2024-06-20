@@ -23,7 +23,10 @@ macro_rules! writeln {
 
 #[macro_export]
 macro_rules! format {
-    () => {};
+    ($($arg:tt)*) => {{
+        let res = ::std::fmt::format($crate::format_args!($($arg)*));
+        res
+    }};
 }
 
 #[macro_export]
