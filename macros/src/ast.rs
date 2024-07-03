@@ -1,13 +1,15 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::ToTokens;
 use syn::punctuated::Punctuated;
 use syn::Expr;
 
 pub struct DashIdent(pub Punctuated<syn::Ident, syn::Token![-]>);
 
-pub struct Doctype;
+pub struct Doctype {
+    pub span: Span,
+}
 
-pub enum Tag {
+pub enum TagKind {
     Start {
         name: DashIdent,
         attributes: Vec<Attr>,
@@ -18,9 +20,15 @@ pub enum Tag {
     },
 }
 
+pub struct Tag {
+    pub kind: TagKind,
+    pub span: Span,
+}
+
 pub struct Attr {
     pub name: DashIdent,
     pub value: Value,
+    pub span: Span,
 }
 
 #[derive(Clone)]
@@ -45,6 +53,16 @@ pub enum Segment {
     Doctype(Doctype),
     Tag(Tag),
     Value(Value),
+}
+
+impl ToTokens for Segment {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        match self {
+            Segment::Doctype(doctype) => doctype.to_string().to_tokens(tokens),
+            Segment::Tag(tag) => tag.to_string().to_tokens(tokens),
+            Segment::Value(value) => value.to_tokens(tokens),
+        }
+    }
 }
 
 pub struct Template {

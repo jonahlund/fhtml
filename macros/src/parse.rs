@@ -1,3 +1,4 @@
+use proc_macro2::Span;
 use syn::ext::IdentExt as _;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
@@ -24,6 +25,7 @@ impl Parse for ast::DashIdent {
 
 impl Parse for ast::Doctype {
     fn parse(input: ParseStream) -> syn::Result<Self> {
+        let start_span = input.span();
         input.parse::<syn::Token![<]>()?;
         input.parse::<syn::Token![!]>()?;
         if input.peek(kw::doctype) {
@@ -32,22 +34,29 @@ impl Parse for ast::Doctype {
             input.parse::<kw::DOCTYPE>()?;
         }
         input.parse::<kw::html>()?;
+        let end_span = input.span();
         input.parse::<syn::Token![>]>()?;
 
-        Ok(Self)
+        Ok(Self {
+            span: start_span.join(end_span).unwrap_or(Span::call_site()),
+        })
     }
 }
 
 impl Parse for ast::Tag {
     fn parse(input: ParseStream) -> syn::Result<Self> {
+        let start_span = input.span();
         input.parse::<syn::Token![<]>()?;
 
-        if input.peek(syn::Token![/]) {
-            input.parse::<syn::Token![/]>()?;
+        if input.parse::<Option<syn::Token![/]>>()?.is_some() {
             let name = input.parse()?;
+            let end_span = input.span();
             input.parse::<syn::Token![>]>()?;
 
-            return Ok(Self::End { name });
+            return Ok(Self {
+                kind: ast::TagKind::End { name },
+                span: start_span.join(end_span).unwrap_or(Span::call_site()),
+            });
         }
 
         let name = input.parse()?;
@@ -60,23 +69,33 @@ impl Parse for ast::Tag {
         }
 
         let self_closing = input.parse::<Option<syn::Token![/]>>()?.is_some();
+        let end_span = input.span();
         input.parse::<syn::Token![>]>()?;
 
-        Ok(Self::Start {
-            name,
-            attributes,
-            self_closing,
+        Ok(Self {
+            kind: ast::TagKind::Start {
+                name,
+                attributes,
+                self_closing,
+            },
+            span: start_span.join(end_span).unwrap_or(Span::call_site()),
         })
     }
 }
 
 impl Parse for ast::Attr {
     fn parse(input: ParseStream) -> syn::Result<Self> {
+        let start_span = input.span();
         let name = input.parse()?;
         input.parse::<syn::Token![=]>()?;
+        let end_span = input.span();
         let value = input.parse()?;
 
-        Ok(Self { name, value })
+        Ok(Self {
+            name,
+            value,
+            span: start_span.join(end_span).unwrap_or(Span::call_site()),
+        })
     }
 }
 
@@ -126,17 +145,19 @@ impl Parse for ast::Segment {
 
 impl Parse for ast::Template {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let mut segments = vec![];
-        let mut values = vec![];
+        let mut segments = Vec::new();
+        let mut values = Vec::new();
 
         while !input.is_empty() {
             let segment = input.parse::<ast::Segment>()?;
 
             // Gather all values from segments
             match &segment {
-                ast::Segment::Tag(ast::Tag::Start { attributes, .. }) => {
-                    for attr in attributes {
-                        values.push(attr.value.clone());
+                ast::Segment::Tag(tag) => {
+                    if let ast::TagKind::Start { attributes, .. } = &tag.kind {
+                        for attr in attributes {
+                            values.push(attr.value.clone());
+                        }
                     }
                 }
                 ast::Segment::Value(value) => {
@@ -148,13 +169,9 @@ impl Parse for ast::Template {
             segments.push(segment);
         }
 
-        Ok(Self {
-            segments,
-            // Inlined values are omitted
-            values: values
-                .into_iter()
-                .filter(|v| v.clone().into_string().is_none())
-                .collect(),
-        })
+        let template = Self { segments, values };
+        template.analyze()?;
+
+        Ok(template)
     }
 }
