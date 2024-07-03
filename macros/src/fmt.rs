@@ -24,17 +24,12 @@ impl fmt::Display for ast::Tag {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.kind {
             ast::TagKind::Start {
-                name,
-                attributes,
-                self_closing,
+                name, attributes, ..
             } => {
                 f.write_char('<')?;
                 name.fmt(f)?;
                 for ast::Attr { name, value, .. } in attributes {
                     write!(f, " {name}=\"{value}\"")?;
-                }
-                if *self_closing {
-                    f.write_str(" /")?;
                 }
                 f.write_char('>')
             }
