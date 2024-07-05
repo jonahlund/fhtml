@@ -3,16 +3,17 @@ members = ["macros"]
 
 [package]
 name = "fhtml"
-edition = "2021"
 version = "0.6.0"
+edition = "2021"
 authors = ["Jonah Lund <jonahlund@proton.me>"]
-description = "Std-compatible HTML formatting macros"
+description = "std-compatible HTML formatting macros"
 homepage = "https://github.com/JonahLund/fhtml"
 repository = "https://github.com/JonahLund/fhtml"
 readme = "./README.md"
 keywords = ["html", "macro", "template", "formatting"]
 categories = ["template-engine", "value-formatting", "web-programming"]
 license = "MIT"
+rust-version = "1.71"
 
 [package.metadata.docs.rs]
 all-features = true

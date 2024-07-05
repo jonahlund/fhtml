@@ -9,8 +9,14 @@ impl ast::Template {
             match segment {
                 ast::Segment::Doctype(_) => {}
                 ast::Segment::Tag(tag) => match &tag.kind {
-                    ast::TagKind::Start { name, .. } => {
-                        stack.push((name.to_string(), tag.span))
+                    ast::TagKind::Start {
+                        name, self_closing, ..
+                    } => {
+                        // Self-closing tags do not need to be pushed to the
+                        // stack since they have no counterpart.
+                        if !self_closing {
+                            stack.push((name.to_string(), tag.span))
+                        }
                     }
                     ast::TagKind::End {
                         name: current_tag_name,
