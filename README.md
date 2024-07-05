@@ -1,131 +1,98 @@
 # fhtml
 
-Std-compatible HTML formatting macros
+[<img alt="github" src="https://img.shields.io/badge/github-jonahlund/fhtml-8da0cb?style=for-the-badge&logo=github" height="20">](https://github.com/jonahlund/fhtml)
+[<img alt="crates.io" src="https://img.shields.io/crates/v/fhtml.svg?style=for-the-badge&logo=rust" height="20">](https://crates.io/crates/fhtml)
+[<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-fhtml-66c2a5?style=for-the-badge&logo=docs.rs" height="20">](https://docs.rs/fhtml)
+[<img alt="build status" src="https://img.shields.io/github/actions/workflow/status/jonahlund/fhtml/ci.yml?branch=main&style=for-the-badge" height="20">](https://github.com/jonahlund/fhtml/actions?query=branch%3Amain)
 
-## Overview
+fhtml provides convenient macros to write formatted HTML in Rust with embedded
+expressions.
 
-`fhtml` Provides formatting macros for writing HTML without the annoyance of dealing with HTML inside string literals. A few highlights:
+<br>
 
-- **simplicity:** no complex templating syntax, just plain HTML with embedded expressions and format specifiers
-- **zero extra allocations:** `fhtml` macros expand to their `std` counterpart with no indirections or added allocations
-- **compatibility:** since `fhtml` is simply a wrapper over `std` macros, meaning that you can easily use idiomatic Rust, such as implementing `fmt::Display` or `fmt::Write` for creating components, or integrate with existing libraries and tools
-- **safety:** `fhtml` provides an easy way to escape values (escaping is *NOT* done implicitly)
+## Components
 
-## Syntax
+Components can be written in a number of ways, but the common ways to create
+reusable components include:
 
-- HTML is typed as-is, unquoted:
-```rust
-fhtml::format!(<input />);
-```
-- Expressions are passed in using braces:
-```rust
-fhtml::format!(<div>{1 + 1}</div>);
-```
-- Text nodes are quoted:
-```rust
-fhtml::format!(<p>"Some text"</p>);
-```
-- Format specifiers are written after expressions:
-```rust
-fhtml::format!(<code>{vec![1, 2, 3]:?}</code>);
-```
-- Escaping is done by using an exclamation mark `!` as a format specifier:
-```rust
-fhtml::format!(<div>{"<b>Dangerous input</b>":!}</div>);
-```
-this being the only format specifier deviating from the [std::fmt syntax](https://doc.rust-lang.org/stable/std/fmt/index.html#syntax)
+- **Function components** — A function component can be a simple function that
+    accepts some arguments and returns the computed HTML. These are the most
+    common types of components across web frameworks. For fhtml, function
+    components are not always the best way to create a component, since unlike
+    most JSX frameworks, function components do not get special treatment when
+    used inside an fhtml macro.
 
-## Usage
+- **Struct components** — A struct that implements [`Display`] is arguably the
+    most JSX-like way to use components, since you can specify fields or "props"
+    in an arbitrary order, and use convenient traits like `Default`.
 
-### Writing to a buffer
+- **Macros** — In Rust 1.71, flattening of nested [`format_args!`] was
+    introduced, but this only works if macros are invoked, not functions nor
+    methods, even if they are inlined. So for smaller components, using a macro
+    that returns [`fhtml::format_args!`] is the most efficient kind of
+    component, since they are usually zero-cost.
 
-```rust
-let mut buffer = String::new();
-fhtml::write!(buffer, <div>"Hello, World!"</div>);
-```
+[`Display`]: https://doc.rust-lang.org/stable/std/fmt/trait.Display.html
+[`format_args!`]: https://doc.rust-lang.org/stable/std/macro.format_args.html
+[`fhtml::format_args!`]: https://docs.rs/fhtml/latest/fhtml/macro.format_args.html
 
-### Escaping
+<br>
 
-```rust
-let user_input = "<b>Dangerous input</b>";
-fhtml::format!(<div>{user_input:!}</div>); // "<div>&lt;b&gt;Dangerous input&lt;/b&gt;</div>"
-```
+## Nested formatting
 
-### Components
+You often need to do additional formatting inside your HTML, and you might be
+tempted to use the standard [`format!`] for that. However, this is not the most
+efficient way of doing additional formatting. Instead, [`format_args!`] should
+be used in most cases. The overhead of [`format_args!`] is typically zero-cost
+since nested [`format_args!`] calls are flattened by the compiler.
 
-Since `fhtml` macros expands to their `std` counterpart, you are free to create components however you prefer
-
-#### Function components
+[`format!`]: https://doc.rust-lang.org/stable/std/macro.format.html
+[`format_args!`]: https://doc.rust-lang.org/stable/std/macro.format_args.html
 
 ```rust
-fn heading(label: &'static str) -> String {
-    fhtml::format! {
-        <h1>{label}</h1>
-    }    
-}
-
-let page = fhtml::format! {
-    <main>
-        {heading("My Heading")}
-        <div>"My Content"</div>
-    </main>
-};
-```
-
-#### Struct components
-
-```rust
-use std::fmt;
-
-struct Product {
-    name: &'static str,
-    price: f32,
-}
-
-impl fmt::Display for Product {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fhtml::write! { f,
-            <article>
-                <h2>{self.name}</h2>
-                <h3>"$" {self.price}</h3>
-            </article>
-        }
-    }
-}
-
-let products = fhtml::format! {
-    <h1>"Our products"</h1>
-    {Product {
-      name: "Arabica Coffee Beans",
-      price: 3.99
-    }}
-    {Product {
-      name: "Sourdough Bread",
-      price: 2.49
-    }}
-};
-```
-
-### Format specifiers
-
-```rust
-fhtml::format!(<code>{vec![1, 2, 3]:?}</code>); // "<code>[1, 2, 3]</code>"
-fhtml::format!(<span>{10:#b}</span>);           // "<span>0b1010</span>"
-```
-
-### Iterators
-
-```rust
+let puppy_kind = "Golden Retriever";
 fhtml::format! {
-    <ul>
-        {
-            (0..10).fold(String::new(), |mut f, i| {
-                let _ = fhtml::write! { f,
-                    <li>{i}</li>
-                };
-                f
-            })
-        }
-    </ul>
+    <img
+        alt={format_args!("A happy {} playing", puppy_kind)}
+        src="puppy.jpg"
+    />
+}
+// Is equivalent to writing:
+std::format!("<img alt=\"A happy {} playing\" src=\"puppy.jpg\">", puppy_kind)
+```
+
+<br>
+    
+## Const formatting
+
+There are often situations when you want to write some HTML without using any
+runtime values or variables. For this, you can use [`fhtml::concat!`].
+
+```rust
+const MY_PAGE: &str = fhtml::concat! {
+    <!DOCTYPE html>
+    <head>
+        <title>"My HTML Page"</title>
+    <head>
+    <body>
+        <h1>"Welcome to my HTML page!"</h1>
+        {include_str!("../my-page.html")}
+    </body>
 }
 ```
+
+[`fhtml::concat!`]: https://docs.rs/fhtml/latest/fhtml/macro.concat.html
+
+<br>
+
+## Escaping
+
+Values are not escaped automatically. fhtml exports a simple escape function.
+For more complex escaping, [html-escape](https://crates.io/crates/html-escape)
+may be sufficient.
+
+#### License
+
+<sup>
+Licensed under <a href="LICENSE">MIT license</a>.
+</sup>
