@@ -3,6 +3,7 @@ name = "fhtml-macros"
 version = "0.6.0"
 edition = "2021"
 authors = ["Jonah Lund <jonahlund@proton.me>"]
+description = "Macro implementations for `fhtml`"
 repository = "https://github.com/JonahLund/fhtml"
 license = "MIT"
 rust-version = "1.71"
