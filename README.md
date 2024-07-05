@@ -73,7 +73,7 @@ const MY_PAGE: &str = fhtml::concat! {
     <!DOCTYPE html>
     <head>
         <title>"My HTML Page"</title>
-    <head>
+    </head>
     <body>
         <h1>"Welcome to my HTML page!"</h1>
         {include_str!("../my-page.html")}
