@@ -6,7 +6,7 @@ mod ast;
 mod fmt;
 mod parse;
 
-/// Creates an [`fmt::Arguments`].
+/// A low level macro for creating an [`fmt::Arguments`] with formatted HTML.
 ///
 /// See [`std::format_args!`] for more information.
 ///
@@ -43,7 +43,7 @@ pub fn format_args_nl(input: TokenStream) -> TokenStream {
     output.into()
 }
 
-/// Creates an &'static str with the formatted HTML.
+/// Creates an &'static str with formatted HTML.
 ///
 /// Only supports certain literals as values.
 /// See [`std::concat!`] for more information.
