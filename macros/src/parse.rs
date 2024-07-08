@@ -1,9 +1,11 @@
-use proc_macro2::Span;
+use std::fmt::Write;
+
+use quote::ToTokens;
 use syn::ext::IdentExt as _;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 
-use crate::ast;
+use crate::{ast, lower_ast, ConcatInput, FormatArgsInput};
 
 mod kw {
     syn::custom_keyword!(DOCTYPE);
@@ -25,7 +27,6 @@ impl Parse for ast::DashIdent {
 
 impl Parse for ast::Doctype {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let start_span = input.span();
         input.parse::<syn::Token![<]>()?;
         input.parse::<syn::Token![!]>()?;
         if input.peek(kw::doctype) {
@@ -34,76 +35,73 @@ impl Parse for ast::Doctype {
             input.parse::<kw::DOCTYPE>()?;
         }
         input.parse::<kw::html>()?;
-        let end_span = input.span();
         input.parse::<syn::Token![>]>()?;
 
-        Ok(Self {
-            span: start_span.join(end_span).unwrap_or(Span::call_site()),
-        })
+        Ok(Self)
     }
 }
 
-impl Parse for ast::Tag {
+impl<Value: Parse> Parse for ast::Tag<Value> {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let start_span = input.span();
         input.parse::<syn::Token![<]>()?;
 
         if input.parse::<Option<syn::Token![/]>>()?.is_some() {
             let name = input.parse()?;
-            let end_span = input.span();
             input.parse::<syn::Token![>]>()?;
 
-            return Ok(Self {
-                kind: ast::TagKind::End { name },
-                span: start_span.join(end_span).unwrap_or(Span::call_site()),
-            });
+            return Ok(Self::Closing { name });
         }
 
         let name = input.parse()?;
 
-        let mut attributes = Vec::new();
+        let mut attrs = Vec::new();
         while !(input.peek(syn::Token![>])
             || (input.peek(syn::Token![/]) && input.peek2(syn::Token![>])))
         {
-            attributes.push(input.parse()?);
+            attrs.push(input.parse()?);
         }
 
         let self_closing = input.parse::<Option<syn::Token![/]>>()?.is_some();
-        let end_span = input.span();
         input.parse::<syn::Token![>]>()?;
 
-        Ok(Self {
-            kind: ast::TagKind::Start {
-                name,
-                attributes,
-                self_closing,
-            },
-            span: start_span.join(end_span).unwrap_or(Span::call_site()),
+        Ok(Self::Opening {
+            name,
+            attrs,
+            self_closing,
         })
     }
 }
 
-impl Parse for ast::Attr {
+impl<Value: Parse> Parse for ast::Attr<Value> {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let start_span = input.span();
         let name = input.parse()?;
         input.parse::<syn::Token![=]>()?;
-        let end_span = input.span();
         let value = input.parse()?;
 
-        Ok(Self {
-            name,
-            value,
-            span: start_span.join(end_span).unwrap_or(Span::call_site()),
-        })
+        Ok(Self { name, value })
     }
 }
 
-impl Parse for ast::Value {
+impl Parse for ast::LitValue {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let lookahead = input.lookahead1();
         if lookahead.peek(syn::LitStr) {
-            Ok(Self::Text(input.parse()?))
+            Ok(Self::LitStr(input.parse()?))
+        } else if lookahead.peek(syn::token::Brace) {
+            let content;
+            syn::braced!(content in input);
+            Ok(Self::Expr(content.parse()?))
+        } else {
+            Err(lookahead.error())
+        }
+    }
+}
+
+impl Parse for ast::PlaceholderValue {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let lookahead = input.lookahead1();
+        if lookahead.peek(syn::LitStr) {
+            Ok(Self::LitStr(input.parse()?))
         } else if lookahead.peek(syn::token::Brace) {
             let content;
 
@@ -116,14 +114,14 @@ impl Parse for ast::Value {
                 specs = Some(content.parse()?);
             }
 
-            Ok(Self::Braced { value, specs })
+            Ok(Self::Expr { value, specs })
         } else {
             Err(lookahead.error())
         }
     }
 }
 
-impl Parse for ast::Segment {
+impl<Value: Parse> Parse for ast::Node<Value> {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let lookahead = input.lookahead1();
         if lookahead.peek(syn::Token![<])
@@ -143,35 +141,56 @@ impl Parse for ast::Segment {
     }
 }
 
-impl Parse for ast::Template {
+impl Parse for FormatArgsInput {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let mut segments = Vec::new();
+        let mut template = String::new();
         let mut values = Vec::new();
 
         while !input.is_empty() {
-            let segment = input.parse::<ast::Segment>()?;
+            let node = input.parse::<ast::Node<ast::PlaceholderValue>>()?;
 
-            // Gather all values from segments
-            match &segment {
-                ast::Segment::Tag(tag) => {
-                    if let ast::TagKind::Start { attributes, .. } = &tag.kind {
-                        for attr in attributes {
-                            values.push(attr.value.clone());
-                        }
-                    }
-                }
-                ast::Segment::Value(value) => {
-                    values.push(value.clone());
-                }
-                _ => {}
-            };
+            values.extend(node.get_all_values().into_iter().map(Into::into));
 
-            segments.push(segment);
+            for part in node.into_iter() {
+                let _ = template.write_str(&part.to_string());
+            }
         }
 
-        let template = Self { segments, values };
-        template.analyze()?;
+        Ok(Self { template, values })
+    }
+}
 
-        Ok(template)
+impl Parse for ConcatInput {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let mut segments = Vec::new();
+        let mut acc = String::new();
+
+        while !input.is_empty() {
+            let node = input.parse::<ast::Node<ast::LitValue>>()?;
+
+            for part in node.into_iter() {
+                match part {
+                    lower_ast::AstPart::AttrValue(v)
+                    | lower_ast::AstPart::Value(v) => {
+                        if let ast::LitValue::LitStr(lit) = v {
+                            acc.push_str(&lit.value());
+                        } else {
+                            segments.push(acc.to_token_stream());
+                            segments.push(v.to_token_stream());
+                            acc.clear();
+                        }
+                    }
+                    _ => {
+                        let _ = write!(acc, "{}", part);
+                    }
+                }
+            }
+        }
+
+        if !acc.is_empty() {
+            segments.push(acc.to_token_stream());
+        }
+
+        Ok(Self { segments })
     }
 }

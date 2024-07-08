@@ -1,10 +1,15 @@
 use proc_macro::TokenStream;
 use quote::quote;
 
-mod analyze;
 mod ast;
 mod fmt;
+mod lower_ast;
 mod parse;
+
+pub(crate) struct FormatArgsInput {
+    pub template: String,
+    pub values: Vec<ast::LitValue>,
+}
 
 /// A low level macro for creating an [`fmt::Arguments`] with formatted HTML.
 ///
@@ -14,8 +19,10 @@ mod parse;
 /// [`std::format_args!`]: https://doc.rust-lang.org/stable/std/macro.format_args.html
 #[proc_macro]
 pub fn format_args(input: TokenStream) -> TokenStream {
-    let template = syn::parse_macro_input!(input as ast::Template);
-    let values = &template.values;
+    let input = syn::parse_macro_input!(input as FormatArgsInput);
+
+    let template = input.template;
+    let values = input.values;
 
     let output = quote! {
         ::std::format_args!(#template, #(#values),*)
@@ -31,10 +38,10 @@ pub fn format_args(input: TokenStream) -> TokenStream {
 /// [`std::format_args_nl!`]: https://doc.rust-lang.org/stable/std/macro.format_args_nl.html
 #[proc_macro]
 pub fn format_args_nl(input: TokenStream) -> TokenStream {
-    let template = syn::parse_macro_input!(input as ast::Template);
-    let values = &template.values;
+    let input = syn::parse_macro_input!(input as FormatArgsInput);
 
-    let template_with_nl = format!("{}<br>", template);
+    let template_with_nl = format!("{}<br>", input.template);
+    let values = input.values;
 
     let output = quote! {
         ::std::format_args!(#template_with_nl, #(#values),*)
@@ -43,7 +50,11 @@ pub fn format_args_nl(input: TokenStream) -> TokenStream {
     output.into()
 }
 
-/// Creates an &'static str with formatted HTML.
+pub(crate) struct ConcatInput {
+    pub segments: Vec<proc_macro2::TokenStream>,
+}
+
+/// Creates a &'static str with formatted HTML.
 ///
 /// Only supports certain literals as values.
 /// See [`std::concat!`] for more information.
@@ -51,8 +62,8 @@ pub fn format_args_nl(input: TokenStream) -> TokenStream {
 /// [`std::concat!`]: https://doc.rust-lang.org/stable/std/macro.concat.html
 #[proc_macro]
 pub fn concat(input: TokenStream) -> TokenStream {
-    let template = syn::parse_macro_input!(input as ast::Template);
-    let segments = &template.segments;
+    let input = syn::parse_macro_input!(input as ConcatInput);
+    let segments = input.segments;
 
     let output = quote! {
         ::std::concat!(#(#segments),*)
