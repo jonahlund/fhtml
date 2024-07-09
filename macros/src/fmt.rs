@@ -49,7 +49,7 @@ impl<Value: fmt::Display> fmt::Display for lower_ast::AstPart<Value> {
             Self::ClosingTagEnd        => f.write_char('>'),
             Self::AttrName(name)       => write!(f, " {name}="),
             Self::AttrValueStart       => f.write_char('"'),
-            Self::AttrValue(value)     => write!(f, "{value}"),
+            Self::AttrValue(value)     => value.fmt(f),
             Self::AttrValueEnd         => f.write_char('"'),
             Self::Value(value)         => value.fmt(f),
         }
