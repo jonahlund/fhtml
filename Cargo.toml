@@ -3,7 +3,7 @@ members = ["macros"]
 
 [package]
 name = "fhtml"
-version = "0.6.0"
+version = "0.6.1"
 edition = "2021"
 authors = ["Jonah Lund <jonahlund@proton.me>"]
 description = "std-compatible HTML formatting macros"
@@ -20,4 +20,4 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-fhtml-macros = { version = "0.6", path = "macros" }
+fhtml-macros = { version = "0.6.1", path = "macros" }
