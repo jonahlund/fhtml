@@ -1,79 +1,91 @@
-#![allow(dead_code)]
-
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::TokenStream;
 use quote::ToTokens;
+use syn::parse::Parse;
 use syn::punctuated::Punctuated;
 use syn::Expr;
 
-pub struct DashIdent(pub Punctuated<syn::Ident, syn::Token![-]>);
+#[cfg_attr(test, derive(Debug, PartialEq))]
+pub(crate) struct DashIdent(pub Punctuated<syn::Ident, syn::Token![-]>);
 
-pub struct Doctype {
-    pub span: Span,
-}
+#[cfg_attr(test, derive(Debug, PartialEq))]
+pub(crate) struct Doctype;
 
-pub enum TagKind {
-    Start {
-        name: DashIdent,
-        attributes: Vec<Attr>,
-        self_closing: bool,
-    },
-    End {
-        name: DashIdent,
-    },
-}
-
-pub struct Tag {
-    pub kind: TagKind,
-    pub span: Span,
-}
-
-pub struct Attr {
-    pub name: DashIdent,
-    pub value: Value,
-    pub span: Span,
+#[derive(Clone)]
+#[cfg_attr(test, derive(Debug, PartialEq))]
+pub(crate) enum LitValue {
+    LitStr(syn::LitStr),
+    Expr(syn::Expr),
 }
 
 #[derive(Clone)]
-pub enum Value {
-    Text(syn::LitStr),
-    Braced {
+#[cfg_attr(test, derive(Debug))]
+pub(crate) enum PlaceholderValue {
+    LitStr(syn::LitStr),
+    Expr {
         value: Expr,
         specs: Option<TokenStream>,
     },
 }
 
-impl ToTokens for Value {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        match self {
-            Value::Text(literal) => literal.to_tokens(tokens),
-            Value::Braced { value, .. } => value.to_tokens(tokens),
-        }
-    }
+#[cfg_attr(test, derive(Debug, PartialEq))]
+pub(crate) struct Attr<Value: Parse> {
+    pub(crate) name: DashIdent,
+    pub(crate) value: Value,
 }
 
-pub enum Segment {
+#[cfg_attr(test, derive(Debug, PartialEq))]
+pub(crate) enum Tag<Value: Parse> {
+    Opening {
+        name: DashIdent,
+        attrs: Vec<Attr<Value>>,
+        #[allow(dead_code)]
+        self_closing: bool,
+    },
+    Closing {
+        name: DashIdent,
+    },
+}
+
+#[cfg_attr(test, derive(Debug, PartialEq))]
+pub(crate) enum Node<Value: Parse> {
     Doctype(Doctype),
-    Tag(Tag),
+    Tag(Tag<Value>),
     Value(Value),
 }
 
-impl ToTokens for Segment {
+impl ToTokens for LitValue {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
-            Segment::Doctype(doctype) => doctype.to_string().to_tokens(tokens),
-            Segment::Tag(tag) => tag.to_string().to_tokens(tokens),
-            Segment::Value(value) => value.to_tokens(tokens),
+            LitValue::LitStr(x) => x.to_tokens(tokens),
+            LitValue::Expr(x) => x.to_tokens(tokens),
         }
     }
 }
 
-pub struct Template {
-    pub segments: Vec<Segment>,
-    pub values: Vec<Value>,
+impl From<PlaceholderValue> for LitValue {
+    fn from(value: PlaceholderValue) -> Self {
+        match value {
+            PlaceholderValue::LitStr(value) => Self::LitStr(value),
+            PlaceholderValue::Expr { value, .. } => Self::Expr(value),
+        }
+    }
 }
 
-impl ToTokens for Template {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        self.to_string().to_tokens(tokens);
+impl<Value: Parse + Clone> Node<Value> {
+    pub(crate) fn get_all_values(&self) -> Vec<Value> {
+        let mut v = Vec::new();
+
+        match self {
+            #[rustfmt::skip]
+            Node::Tag(Tag::Opening { attrs, .. }) => for attr in attrs {
+                v.push(attr.value.clone());
+            },
+            Node::Value(value) => {
+                v.push(value.clone());
+            }
+            _ => {}
+        }
+
+        v
     }
 }

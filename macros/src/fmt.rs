@@ -1,6 +1,6 @@
 use std::fmt::{self, Write};
 
-use crate::ast;
+use crate::{ast, lower_ast};
 
 impl fmt::Display for ast::DashIdent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -14,35 +14,17 @@ impl fmt::Display for ast::DashIdent {
     }
 }
 
-impl fmt::Display for ast::Doctype {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("<!DOCTYPE html>")
+impl fmt::Display for ast::LitValue {
+    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
+        unreachable!()
     }
 }
 
-impl fmt::Display for ast::Tag {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self.kind {
-            ast::TagKind::Start {
-                name, attributes, ..
-            } => {
-                f.write_char('<')?;
-                name.fmt(f)?;
-                for ast::Attr { name, value, .. } in attributes {
-                    write!(f, " {name}=\"{value}\"")?;
-                }
-                f.write_char('>')
-            }
-            ast::TagKind::End { name } => write!(f, "</{name}>"),
-        }
-    }
-}
-
-impl fmt::Display for ast::Value {
+impl fmt::Display for ast::PlaceholderValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Text(_) => f.write_str("{}"),
-            Self::Braced { specs, .. } => {
+            Self::LitStr(_) => f.write_str("{}"),
+            Self::Expr { specs, .. } => {
                 f.write_char('{')?;
                 if let Some(specs) = specs {
                     f.write_char(':')?;
@@ -54,21 +36,22 @@ impl fmt::Display for ast::Value {
     }
 }
 
-impl fmt::Display for ast::Segment {
+#[rustfmt::skip]
+impl<Value: fmt::Display> fmt::Display for lower_ast::AstPart<Value> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Doctype(doctype) => doctype.fmt(f),
-            Self::Tag(tag) => tag.fmt(f),
-            Self::Value(value) => value.fmt(f),
+            Self::Doctype              => f.write_str("<!DOCTYPE html>"),
+            Self::OpeningTagStart      => f.write_char('<'),
+            Self::OpeningTagName(name) => name.fmt(f),
+            Self::OpeningTagEnd        => f.write_char('>'),
+            Self::ClosingTagStart      => f.write_str("</"),
+            Self::ClosingTagName(name) => name.fmt(f),
+            Self::ClosingTagEnd        => f.write_char('>'),
+            Self::AttrName(name)       => write!(f, " {name}="),
+            Self::AttrValueStart       => f.write_char('"'),
+            Self::AttrValue(value)     => value.fmt(f),
+            Self::AttrValueEnd         => f.write_char('"'),
+            Self::Value(value)         => value.fmt(f),
         }
-    }
-}
-
-impl fmt::Display for ast::Template {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for segment in &self.segments {
-            segment.fmt(f)?;
-        }
-        Ok(())
     }
 }

@@ -85,11 +85,18 @@ mod tests {
 
     #[test]
     fn format() {
-        assert_eq!(format!(<h1>"Hello, world!"</h1>), "<h1>Hello, world!</h1>");
+        assert_eq!(
+            crate::format!(<h1>"Hello, world!"</h1>),
+            "<h1>Hello, world!</h1>"
+        );
     }
 
     #[test]
     fn concat() {
         assert_eq!(crate::concat!(<div>{1}</div>), "<div>1</div>");
+        assert_eq!(
+            crate::concat!(<img src="/foo.png" alt="foo" />),
+            "<img src=\"/foo.png\" alt=\"foo\">"
+        );
     }
 }
