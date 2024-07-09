@@ -35,6 +35,7 @@ pub fn format_args(input: TokenStream) -> TokenStream {
 ///
 /// See [`std::format_args_nl!`] for more information.
 ///
+/// [`fmt::Arguments`]: https://doc.rust-lang.org/stable/std/fmt/struct.Arguments.html
 /// [`std::format_args_nl!`]: https://doc.rust-lang.org/stable/std/macro.format_args_nl.html
 #[proc_macro]
 pub fn format_args_nl(input: TokenStream) -> TokenStream {
