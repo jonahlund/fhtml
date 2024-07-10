@@ -1,13 +1,33 @@
-//! fhtml - Rust formatting macros for HTML.
+//! fhtml provides macros for writing HTML in Rust with embedded expressions.
 //!
-//! `fhtml` provides familiar formatting macros such as `write!`, `format!`,
-//! `println!`, `concat!`, etc, but tailored for HTML.
+//! All of the macros provided have an std counterpart, e.g:
+//! - [`fhtml::concat!`] -> [`std::concat!`]
+//! - [`fhtml::format!`] -> [`std::format!`]
+//! - [`fhtml::format_args!`] -> [`std::format_args!`]
+//! - [`fhtml::format_args_nl!`] -> [`std::format_args_nl!`]
+//! - [`fhtml::write!`] -> [`std::write!`]
+//! - [`fhtml::writeln!`] -> [`std::writeln!`]
 //!
-//! Escaping of values is done manually.
+//! [`fhtml::concat!`]: https://docs.rs/fhtml/latest/fhtml/macro.concat.html
+//! [`fhtml::format!`]: https://docs.rs/fhtml/latest/fhtml/macro.format.html
+//! [`fhtml::format_args!`]: https://docs.rs/fhtml/latest/fhtml/macro.format_args.html
+//! [`fhtml::format_args_nl!`]: https://docs.rs/fhtml/latest/fhtml/macro.format_args_nl.html
+//! [`fhtml::write!`]: https://docs.rs/fhtml/latest/fhtml/macro.write.html
+//! [`fhtml::writeln!`]: https://docs.rs/fhtml/latest/fhtml/macro.writeln.html
+//!
+//! [`std::concat!`]: https://doc.rust-lang.org/stable/std/macro.concat.html
+//! [`std::format!`]: https://doc.rust-lang.org/stable/std/macro.format.html
+//! [`std::format_args!`]: https://doc.rust-lang.org/stable/std/macro.format_args.html
+//! [`std::format_args_nl!`]: https://doc.rust-lang.org/stable/std/macro.format_args_nl.html
+//! [`std::write!`]: https://doc.rust-lang.org/stable/std/macro.write.html
+//! [`std::writeln!`]: https://doc.rust-lang.org/stable/std/macro.writeln.html
+//!
+//! Because of the absence of custom traits, fhtml does not provide automatic
+//! escaping for values.
 
 pub use fhtml_macros::*;
 
-/// Write formatted HTML to a buffer.
+/// Writes formatted HTML to a buffer.
 ///
 /// See [`std::write!`] for more information.
 ///

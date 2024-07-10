@@ -53,7 +53,7 @@ pub(crate) struct ConcatInput {
     pub segments: Vec<proc_macro2::TokenStream>,
 }
 
-/// Creates a &'static str with formatted HTML.
+/// Creates a `&'static str` with formatted HTML.
 ///
 /// Only supports certain literals as values.
 /// See [`std::concat!`] for more information.

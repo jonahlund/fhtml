@@ -8,8 +8,6 @@
 fhtml provides convenient macros to write formatted HTML in Rust with embedded
 expressions.
 
-<br>
-
 ## Components
 
 Components can be written in a number of ways, but the common ways to create
@@ -36,8 +34,6 @@ reusable components include:
 [`format_args!`]: https://doc.rust-lang.org/stable/std/macro.format_args.html
 [`fhtml::format_args!`]: https://docs.rs/fhtml/latest/fhtml/macro.format_args.html
 
-<br>
-
 ## Nested formatting
 
 You often need to do additional formatting inside your HTML, and you might be
@@ -60,8 +56,6 @@ fhtml::format! {
 // Is equivalent to writing:
 std::format!("<img alt=\"A happy {} playing\" src=\"puppy.jpg\">", puppy_kind)
 ```
-
-<br>
     
 ## Const formatting
 
@@ -82,8 +76,6 @@ const MY_PAGE: &str = fhtml::concat! {
 ```
 
 [`fhtml::concat!`]: https://docs.rs/fhtml/latest/fhtml/macro.concat.html
-
-<br>
 
 ## Escaping
 
