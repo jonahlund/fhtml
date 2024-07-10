@@ -23,12 +23,12 @@ pub(crate) enum NodeToken<Value: fmt::Display> {
     ClosingTagEnd,
 
     // Attribute
-    AttrStart,
+    AttrStartSpace,
     AttrName(ast::DashIdent),
-    AttrSep,
-    AttrValueStart,
+    AttrEqSep,
+    AttrValueStartQuote,
     AttrValue(Value),
-    AttrValueEnd,
+    AttrValueEndQuote,
 
     // Stray value
     Value(Value),
@@ -38,12 +38,12 @@ impl<Value: Parse + fmt::Display> ast::Attr<Value> {
     /// Converts an HTML attribute into a set of NodeTokens.
     pub(crate) fn into_node_tokens(self) -> [NodeToken<Value>; 6] {
         [
-            NodeToken::AttrStart,
+            NodeToken::AttrStartSpace,
             NodeToken::AttrName(self.name),
-            NodeToken::AttrSep,
-            NodeToken::AttrValueStart,
+            NodeToken::AttrEqSep,
+            NodeToken::AttrValueStartQuote,
             NodeToken::AttrValue(self.value),
-            NodeToken::AttrValueEnd,
+            NodeToken::AttrValueEndQuote,
         ]
     }
 }
@@ -109,15 +109,15 @@ mod tests {
             }
             .into_node_tokens(),
             [
-                NodeToken::AttrStart,
+                NodeToken::AttrStartSpace,
                 NodeToken::AttrName(dash_ident!(foo)),
-                NodeToken::AttrSep,
-                NodeToken::AttrValueStart,
+                NodeToken::AttrEqSep,
+                NodeToken::AttrValueStartQuote,
                 NodeToken::AttrValue(ast::LitValue::LitStr(syn::LitStr::new(
                     "foo",
                     Span::mixed_site()
                 ))),
-                NodeToken::AttrValueEnd,
+                NodeToken::AttrValueEndQuote,
             ]
         )
     }

@@ -72,17 +72,17 @@ impl<Value: fmt::Display> fmt::Display for lower_ast::NodeToken<Value> {
             //  foo="bar"
             //
             // An attribute is always preceeded by a space
-            Self::AttrStart => f.write_char(' '),
+            Self::AttrStartSpace => f.write_char(' '),
             // Attribute name
             Self::AttrName(name) => name.fmt(f),
             // Equal sign, separating the attribute name from the value
-            Self::AttrSep => f.write_char('='),
+            Self::AttrEqSep => f.write_char('='),
             // Starting quote
-            Self::AttrValueStart => f.write_char('"'),
+            Self::AttrValueStartQuote => f.write_char('"'),
             // Attribute value
             Self::AttrValue(value) => value.fmt(f),
             // Ending quote
-            Self::AttrValueEnd => f.write_char('"'),
+            Self::AttrValueEndQuote => f.write_char('"'),
 
             // Stray value
             Self::Value(value) => value.fmt(f),
