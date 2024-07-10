@@ -42,10 +42,6 @@ impl<Value: fmt::Display> fmt::Display for lower_ast::NodeToken<Value> {
         match self {
             Self::Doctype => f.write_str("<!DOCTYPE html>"),
 
-            // Opening tag
-            //
-            //  <foo>
-            //
             // Opening tags start with '<'
             Self::OpeningTagStart => f.write_char('<'),
             // Opening tag name
@@ -56,10 +52,6 @@ impl<Value: fmt::Display> fmt::Display for lower_ast::NodeToken<Value> {
             // tags.
             Self::OpeningTagEnd => f.write_char('>'),
 
-            // Closing tag
-            //
-            //  </foo>
-            //
             // Closing tags start with "</"
             Self::ClosingTagStart => f.write_str("</"),
             // Closing tag name
@@ -67,10 +59,6 @@ impl<Value: fmt::Display> fmt::Display for lower_ast::NodeToken<Value> {
             // Closing tag ends with '>'
             Self::ClosingTagEnd => f.write_char('>'),
 
-            // Attribute
-            //
-            //  foo="bar"
-            //
             // An attribute is always preceeded by a space
             Self::AttrStartSpace => f.write_char(' '),
             // Attribute name
