@@ -151,8 +151,8 @@ impl Parse for FormatArgsInput {
 
             values.extend(node.get_all_values().into_iter().map(Into::into));
 
-            for part in node.into_iter() {
-                let _ = template.write_str(&part.to_string());
+            for token in node.into_node_tokens() {
+                let _ = write!(template, "{}", token);
             }
         }
 
@@ -168,10 +168,10 @@ impl Parse for ConcatInput {
         while !input.is_empty() {
             let node = input.parse::<ast::Node<ast::LitValue>>()?;
 
-            for part in node.into_iter() {
-                match part {
-                    lower_ast::AstPart::AttrValue(v)
-                    | lower_ast::AstPart::Value(v) => {
+            for token in node.into_node_tokens() {
+                match token {
+                    lower_ast::NodeToken::AttrValue(v)
+                    | lower_ast::NodeToken::Value(v) => {
                         if let ast::LitValue::LitStr(lit) = v {
                             acc.push_str(&lit.value());
                         } else {
@@ -181,7 +181,7 @@ impl Parse for ConcatInput {
                         }
                     }
                     _ => {
-                        let _ = write!(acc, "{}", part);
+                        let _ = write!(acc, "{}", token);
                     }
                 }
             }

@@ -16,7 +16,7 @@ impl fmt::Display for ast::DashIdent {
 
 impl fmt::Display for ast::LitValue {
     fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
-        unreachable!()
+        unimplemented!()
     }
 }
 
@@ -36,22 +36,56 @@ impl fmt::Display for ast::PlaceholderValue {
     }
 }
 
-#[rustfmt::skip]
-impl<Value: fmt::Display> fmt::Display for lower_ast::AstPart<Value> {
+impl<Value: fmt::Display> fmt::Display for lower_ast::NodeToken<Value> {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Doctype              => f.write_str("<!DOCTYPE html>"),
-            Self::OpeningTagStart      => f.write_char('<'),
+            Self::Doctype => f.write_str("<!DOCTYPE html>"),
+
+            // Opening tag
+            //
+            //  <foo>
+            //
+            // Opening tags start with '<'
+            Self::OpeningTagStart => f.write_char('<'),
+            // Opening tag name
             Self::OpeningTagName(name) => name.fmt(f),
-            Self::OpeningTagEnd        => f.write_char('>'),
-            Self::ClosingTagStart      => f.write_str("</"),
+            // Opening tags end with '>'
+            //
+            // We do not include a forward slash '/' for self-closing
+            // tags.
+            Self::OpeningTagEnd => f.write_char('>'),
+
+            // Closing tag
+            //
+            //  </foo>
+            //
+            // Closing tags start with "</"
+            Self::ClosingTagStart => f.write_str("</"),
+            // Closing tag name
             Self::ClosingTagName(name) => name.fmt(f),
-            Self::ClosingTagEnd        => f.write_char('>'),
-            Self::AttrName(name)       => write!(f, " {name}="),
-            Self::AttrValueStart       => f.write_char('"'),
-            Self::AttrValue(value)     => value.fmt(f),
-            Self::AttrValueEnd         => f.write_char('"'),
-            Self::Value(value)         => value.fmt(f),
+            // Closing tag ends with '>'
+            Self::ClosingTagEnd => f.write_char('>'),
+
+            // Attribute
+            //
+            //  foo="bar"
+            //
+            // An attribute is always preceeded by a space
+            Self::AttrStart => f.write_char(' '),
+            // Attribute name
+            Self::AttrName(name) => name.fmt(f),
+            // Equal sign, separating the attribute name from the value
+            Self::AttrSep => f.write_char('='),
+            // Starting quote
+            Self::AttrValueStart => f.write_char('"'),
+            // Attribute value
+            Self::AttrValue(value) => value.fmt(f),
+            // Ending quote
+            Self::AttrValueEnd => f.write_char('"'),
+
+            // Stray value
+            Self::Value(value) => value.fmt(f),
         }
     }
 }
