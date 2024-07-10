@@ -36,7 +36,7 @@ impl fmt::Display for ast::PlaceholderValue {
     }
 }
 
-impl<Value: fmt::Display> fmt::Display for lower_ast::NodeToken<Value> {
+impl<V: fmt::Display> fmt::Display for lower_ast::NodeToken<V> {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

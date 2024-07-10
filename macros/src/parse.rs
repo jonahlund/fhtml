@@ -41,7 +41,7 @@ impl Parse for ast::Doctype {
     }
 }
 
-impl<Value: Parse> Parse for ast::Tag<Value> {
+impl<V: Parse> Parse for ast::Tag<V> {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         input.parse::<syn::Token![<]>()?;
 
@@ -72,7 +72,7 @@ impl<Value: Parse> Parse for ast::Tag<Value> {
     }
 }
 
-impl<Value: Parse> Parse for ast::Attr<Value> {
+impl<V: Parse> Parse for ast::Attr<V> {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let name = input.parse()?;
         input.parse::<syn::Token![=]>()?;
@@ -121,7 +121,7 @@ impl Parse for ast::PlaceholderValue {
     }
 }
 
-impl<Value: Parse> Parse for ast::Node<Value> {
+impl<V: Parse> Parse for ast::Node<V> {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let lookahead = input.lookahead1();
         if lookahead.peek(syn::Token![<])

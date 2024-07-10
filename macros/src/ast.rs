@@ -1,6 +1,5 @@
 use proc_macro2::TokenStream;
 use quote::ToTokens;
-use syn::parse::Parse;
 use syn::punctuated::Punctuated;
 use syn::Expr;
 
@@ -28,16 +27,16 @@ pub(crate) enum PlaceholderValue {
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq))]
-pub(crate) struct Attr<Value: Parse> {
+pub(crate) struct Attr<V> {
     pub(crate) name: DashIdent,
-    pub(crate) value: Value,
+    pub(crate) value: V,
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq))]
-pub(crate) enum Tag<Value: Parse> {
+pub(crate) enum Tag<V> {
     Opening {
         name: DashIdent,
-        attrs: Vec<Attr<Value>>,
+        attrs: Vec<Attr<V>>,
         #[allow(dead_code)]
         self_closing: bool,
     },
@@ -47,10 +46,10 @@ pub(crate) enum Tag<Value: Parse> {
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq))]
-pub(crate) enum Node<Value: Parse> {
+pub(crate) enum Node<V> {
     Doctype(Doctype),
-    Tag(Tag<Value>),
-    Value(Value),
+    Tag(Tag<V>),
+    Value(V),
 }
 
 impl ToTokens for LitValue {
@@ -71,8 +70,8 @@ impl From<PlaceholderValue> for LitValue {
     }
 }
 
-impl<Value: Parse + Clone> Node<Value> {
-    pub(crate) fn get_all_values(&self) -> Vec<Value> {
+impl<V: Clone> Node<V> {
+    pub(crate) fn get_all_values(&self) -> Vec<V> {
         let mut v = Vec::new();
 
         match self {
