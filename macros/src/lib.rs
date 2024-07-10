@@ -19,10 +19,8 @@ pub(crate) struct FormatArgsInput {
 /// [`std::format_args!`]: https://doc.rust-lang.org/stable/std/macro.format_args.html
 #[proc_macro]
 pub fn format_args(input: TokenStream) -> TokenStream {
-    let input = syn::parse_macro_input!(input as FormatArgsInput);
-
-    let template = input.template;
-    let values = input.values;
+    let FormatArgsInput { template, values } =
+        syn::parse_macro_input!(input as FormatArgsInput);
 
     let output = quote! {
         ::std::format_args!(#template, #(#values),*)
@@ -39,10 +37,10 @@ pub fn format_args(input: TokenStream) -> TokenStream {
 /// [`std::format_args_nl!`]: https://doc.rust-lang.org/stable/std/macro.format_args_nl.html
 #[proc_macro]
 pub fn format_args_nl(input: TokenStream) -> TokenStream {
-    let input = syn::parse_macro_input!(input as FormatArgsInput);
+    let FormatArgsInput { template, values } =
+        syn::parse_macro_input!(input as FormatArgsInput);
 
-    let template_with_nl = format!("{}<br>", input.template);
-    let values = input.values;
+    let template_with_nl = format!("{}<br>", template);
 
     let output = quote! {
         ::std::format_args!(#template_with_nl, #(#values),*)
@@ -63,8 +61,8 @@ pub(crate) struct ConcatInput {
 /// [`std::concat!`]: https://doc.rust-lang.org/stable/std/macro.concat.html
 #[proc_macro]
 pub fn concat(input: TokenStream) -> TokenStream {
-    let input = syn::parse_macro_input!(input as ConcatInput);
-    let segments = input.segments;
+    let ConcatInput { segments } =
+        syn::parse_macro_input!(input as ConcatInput);
 
     let output = quote! {
         ::std::concat!(#(#segments),*)
