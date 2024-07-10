@@ -1,9 +1,9 @@
 # fhtml
 
-[<img alt="github" src="https://img.shields.io/badge/github-jonahlund/fhtml-8da0cb?style=for-the-badge&logo=github" height="20">](https://github.com/jonahlund/fhtml)
-[<img alt="crates.io" src="https://img.shields.io/crates/v/fhtml.svg?style=for-the-badge&logo=rust" height="20">](https://crates.io/crates/fhtml)
-[<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-fhtml-66c2a5?style=for-the-badge&logo=docs.rs" height="20">](https://docs.rs/fhtml)
-[<img alt="build status" src="https://img.shields.io/github/actions/workflow/status/jonahlund/fhtml/ci.yml?branch=main&style=for-the-badge" height="20">](https://github.com/jonahlund/fhtml/actions?query=branch%3Amain)
+[<img alt="github" src="https://img.shields.io/badge/github-jonahlund/fhtml-8da0cb?style=for-the-badge&logo=github" height="25">](https://github.com/jonahlund/fhtml)
+[<img alt="crates.io" src="https://img.shields.io/crates/v/fhtml.svg?style=for-the-badge&logo=rust" height="25">](https://crates.io/crates/fhtml)
+[<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-fhtml-66c2a5?style=for-the-badge&logo=docs.rs" height="25">](https://docs.rs/fhtml)
+[<img alt="build status" src="https://img.shields.io/github/actions/workflow/status/jonahlund/fhtml/ci.yml?branch=main&style=for-the-badge" height="25">](https://github.com/jonahlund/fhtml/actions?query=branch%3Amain)
 
 fhtml provides convenient macros to write formatted HTML in Rust with embedded
 expressions.
