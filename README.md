@@ -72,7 +72,7 @@ const MY_PAGE: &str = fhtml::concat! {
         <h1>"Welcome to my HTML page!"</h1>
         {include_str!("../my-page.html")}
     </body>
-}
+};
 ```
 
 [`fhtml::concat!`]: https://docs.rs/fhtml/latest/fhtml/macro.concat.html
