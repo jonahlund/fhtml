@@ -1,10 +1,13 @@
 use std::fmt::Write;
 
+use proc_macro2::Span;
 use quote::ToTokens;
 use syn::ext::IdentExt as _;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
+use syn::spanned::Spanned;
 
+use crate::analyze::analyze_nodes;
 use crate::{ast, lower_ast, ConcatInput, FormatArgsInput};
 
 mod kw {
@@ -16,18 +19,21 @@ mod kw {
 impl Parse for ast::DashIdent {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         // Parse a non-empty sequence of identifiers separated by dashes.
-        Ok(Self(
-            Punctuated::<syn::Ident, syn::Token![-]>::parse_separated_nonempty_with(
-                input,
-                syn::Ident::parse_any,
-            )?
-        ))
+        let inner = Punctuated::<syn::Ident, syn::Token![-]>::parse_separated_nonempty_with(
+            input,
+            syn::Ident::parse_any,
+        )?;
+
+        Ok(Self {
+            span: inner.span(),
+            inner,
+        })
     }
 }
 
 impl Parse for ast::Doctype {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        input.parse::<syn::Token![<]>()?;
+        let start_span = input.parse::<syn::Token![<]>()?.span;
         input.parse::<syn::Token![!]>()?;
         if input.peek(kw::doctype) {
             input.parse::<kw::doctype>()?;
@@ -35,50 +41,20 @@ impl Parse for ast::Doctype {
             input.parse::<kw::DOCTYPE>()?;
         }
         input.parse::<kw::html>()?;
-        input.parse::<syn::Token![>]>()?;
+        let end_span = input.parse::<syn::Token![>]>()?.span;
 
-        Ok(Self)
-    }
-}
-
-impl<V: Parse> Parse for ast::Tag<V> {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        input.parse::<syn::Token![<]>()?;
-
-        if input.parse::<Option<syn::Token![/]>>()?.is_some() {
-            let name = input.parse()?;
-            input.parse::<syn::Token![>]>()?;
-
-            return Ok(Self::Closing { name });
-        }
-
-        let name = input.parse()?;
-
-        let mut attrs = Vec::new();
-        while !(input.peek(syn::Token![>])
-            || (input.peek(syn::Token![/]) && input.peek2(syn::Token![>])))
-        {
-            attrs.push(input.parse()?);
-        }
-
-        let self_closing = input.parse::<Option<syn::Token![/]>>()?.is_some();
-        input.parse::<syn::Token![>]>()?;
-
-        Ok(Self::Opening {
-            name,
-            attrs,
-            self_closing,
+        Ok(Self {
+            span: start_span.join(end_span).unwrap_or(Span::call_site()),
         })
     }
 }
 
-impl<V: Parse> Parse for ast::Attr<V> {
+impl<V: Parse> Parse for ast::Value<V> {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let name = input.parse()?;
-        input.parse::<syn::Token![=]>()?;
-        let value = input.parse()?;
+        let span = input.span();
+        let inner = input.parse()?;
 
-        Ok(Self { name, value })
+        Ok(Self { span, inner })
     }
 }
 
@@ -121,6 +97,57 @@ impl Parse for ast::PlaceholderValue {
     }
 }
 
+impl<V: Parse> Parse for ast::Attr<V> {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let name = input.parse::<ast::DashIdent>()?;
+        input.parse::<syn::Token![=]>()?;
+        let value = input.parse::<ast::Value<V>>()?;
+
+        Ok(Self {
+            span: name.span.join(value.span).unwrap_or(Span::call_site()),
+            name,
+            value,
+        })
+    }
+}
+
+impl<V: Parse> Parse for ast::Tag<V> {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let start_span = input.parse::<syn::Token![<]>()?.span;
+
+        if input.parse::<Option<syn::Token![/]>>()?.is_some() {
+            let name = input.parse()?;
+            let end_span = input.parse::<syn::Token![>]>()?.span;
+
+            return Ok(Self {
+                kind: ast::TagKind::Closing { name },
+                span: start_span.join(end_span).unwrap_or(Span::call_site()),
+            });
+        }
+
+        let name = input.parse()?;
+
+        let mut attrs = Vec::new();
+        while !(input.peek(syn::Token![>])
+            || (input.peek(syn::Token![/]) && input.peek2(syn::Token![>])))
+        {
+            attrs.push(input.parse()?);
+        }
+
+        let self_closing = input.parse::<Option<syn::Token![/]>>()?.is_some();
+        let end_span = input.parse::<syn::Token![>]>()?.span;
+
+        Ok(Self {
+            kind: ast::TagKind::Opening {
+                name,
+                attrs,
+                self_closing,
+            },
+            span: start_span.join(end_span).unwrap_or(Span::call_site()),
+        })
+    }
+}
+
 impl<V: Parse> Parse for ast::Node<V> {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let lookahead = input.lookahead1();
@@ -145,12 +172,17 @@ impl Parse for FormatArgsInput {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let mut template = String::new();
         let mut values = Vec::new();
+        let mut nodes = Vec::new();
 
         while !input.is_empty() {
             let node = input.parse::<ast::Node<ast::PlaceholderValue>>()?;
+            values.extend(node.get_all_values());
+            nodes.push(node);
+        }
 
-            values.extend(node.get_all_values().into_iter().map(Into::into));
+        analyze_nodes(&nodes)?;
 
+        for node in nodes {
             for token in node.into_node_tokens() {
                 let _ = write!(template, "{}", token);
             }
@@ -164,10 +196,16 @@ impl Parse for ConcatInput {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let mut segments = Vec::new();
         let mut acc = String::new();
+        let mut nodes = Vec::new();
 
         while !input.is_empty() {
             let node = input.parse::<ast::Node<ast::LitValue>>()?;
+            nodes.push(node);
+        }
 
+        analyze_nodes(&nodes)?;
+
+        for node in nodes {
             for token in node.into_node_tokens() {
                 match token {
                     lower_ast::NodeToken::AttrValue(v)

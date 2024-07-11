@@ -4,7 +4,7 @@ use crate::{ast, lower_ast};
 
 impl fmt::Display for ast::DashIdent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for pair in self.0.pairs() {
+        for pair in self.inner.pairs() {
             pair.value().fmt(f)?;
             if pair.punct().is_some() {
                 f.write_char('-')?;
