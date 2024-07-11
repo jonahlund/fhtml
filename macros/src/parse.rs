@@ -5,7 +5,7 @@ use quote::ToTokens;
 use syn::ext::IdentExt as _;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
-use syn::spanned::Spanned;
+use syn::spanned::Spanned as _;
 
 use crate::analyze::analyze_nodes;
 use crate::{ast, lower_ast, ConcatInput, FormatArgsInput};
