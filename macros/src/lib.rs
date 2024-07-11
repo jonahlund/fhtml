@@ -1,6 +1,7 @@
 use proc_macro::TokenStream;
 use quote::quote;
 
+mod analyze;
 mod ast;
 mod fmt;
 mod lower_ast;
@@ -8,7 +9,7 @@ mod parse;
 
 pub(crate) struct FormatArgsInput {
     pub template: String,
-    pub values: Vec<ast::LitValue>,
+    pub values: Vec<ast::Value<ast::PlaceholderValue>>,
 }
 
 /// A low level macro for creating an [`fmt::Arguments`] with formatted HTML.
