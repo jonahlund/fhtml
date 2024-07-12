@@ -37,6 +37,9 @@ pub(crate) enum LitValue {
 ///
 /// The string representation of this value is a placeholder `{}`, that may
 /// contain formatting specifiers `{:?}`.
+///
+/// The token representation of this value is the actual Rust value it contains,
+/// either `LitStr` or `Expr`.
 #[derive(Clone, Debug)]
 pub(crate) enum PlaceholderValue {
     LitStr(syn::LitStr),
