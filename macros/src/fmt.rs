@@ -4,7 +4,7 @@ use crate::{ast, lower_ast};
 
 impl fmt::Display for ast::DashIdent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for pair in self.inner.pairs() {
+        for pair in self.0.pairs() {
             pair.value().fmt(f)?;
             if pair.punct().is_some() {
                 f.write_char('-')?;
@@ -20,7 +20,7 @@ impl fmt::Display for ast::LitValue {
     }
 }
 
-impl fmt::Display for ast::PlaceholderValue {
+impl fmt::Display for ast::ArgValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::LitStr(_) => f.write_str("{}"),

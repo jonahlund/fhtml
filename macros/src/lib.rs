@@ -8,8 +8,8 @@ mod lower_ast;
 mod parse;
 
 pub(crate) struct FormatArgsInput {
-    pub template: String,
-    pub values: Vec<ast::Value<ast::PlaceholderValue>>,
+    pub fmt: String,
+    pub args: Vec<ast::ArgValue>,
 }
 
 /// A low level macro for creating an [`fmt::Arguments`] with formatted HTML.
@@ -20,11 +20,11 @@ pub(crate) struct FormatArgsInput {
 /// [`std::format_args!`]: https://doc.rust-lang.org/stable/std/macro.format_args.html
 #[proc_macro]
 pub fn format_args(input: TokenStream) -> TokenStream {
-    let FormatArgsInput { template, values } =
+    let FormatArgsInput { fmt, args } =
         syn::parse_macro_input!(input as FormatArgsInput);
 
     let output = quote! {
-        ::std::format_args!(#template, #(#values),*)
+        ::std::format_args!(#fmt, #(#args),*)
     };
 
     output.into()
@@ -38,8 +38,10 @@ pub fn format_args(input: TokenStream) -> TokenStream {
 /// [`std::format_args_nl!`]: https://doc.rust-lang.org/stable/std/macro.format_args_nl.html
 #[proc_macro]
 pub fn format_args_nl(input: TokenStream) -> TokenStream {
-    let FormatArgsInput { template, values } =
-        syn::parse_macro_input!(input as FormatArgsInput);
+    let FormatArgsInput {
+        fmt: template,
+        args: values,
+    } = syn::parse_macro_input!(input as FormatArgsInput);
 
     let template_with_nl = format!("{}<br>", template);
 
