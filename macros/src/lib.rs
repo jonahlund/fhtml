@@ -41,10 +41,10 @@ pub fn format_args_nl(input: TokenStream) -> TokenStream {
     let FormatArgsInput { fmt, args } =
         syn::parse_macro_input!(input as FormatArgsInput);
 
-    let template_with_nl = format!("{}<br>", fmt);
+    let fmt_with_nl = format!("{}<br>", fmt);
 
     let output = quote! {
-        ::std::format_args!(#template_with_nl, #(#args),*)
+        ::std::format_args!(#fmt_with_nl, #(#args),*)
     };
 
     output.into()
