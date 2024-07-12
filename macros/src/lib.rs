@@ -38,15 +38,13 @@ pub fn format_args(input: TokenStream) -> TokenStream {
 /// [`std::format_args_nl!`]: https://doc.rust-lang.org/stable/std/macro.format_args_nl.html
 #[proc_macro]
 pub fn format_args_nl(input: TokenStream) -> TokenStream {
-    let FormatArgsInput {
-        fmt: template,
-        args: values,
-    } = syn::parse_macro_input!(input as FormatArgsInput);
+    let FormatArgsInput { fmt, args } =
+        syn::parse_macro_input!(input as FormatArgsInput);
 
-    let template_with_nl = format!("{}<br>", template);
+    let template_with_nl = format!("{}<br>", fmt);
 
     let output = quote! {
-        ::std::format_args!(#template_with_nl, #(#values),*)
+        ::std::format_args!(#template_with_nl, #(#args),*)
     };
 
     output.into()
