@@ -1,27 +1,14 @@
-#![allow(dead_code)]
-
 use proc_macro2::{Span, TokenStream};
 use quote::ToTokens;
 use syn::punctuated::Punctuated;
+use syn::spanned::Spanned;
 
 // An identifier separated by dashes, `foo-bar-baz`.
-#[derive(Clone, Debug)]
-pub(crate) struct DashIdent {
-    pub inner: Punctuated<syn::Ident, syn::Token![-]>,
-    pub span: Span,
-}
+#[derive(PartialEq, Clone, Debug)]
+pub(crate) struct DashIdent(pub Punctuated<syn::Ident, syn::Token![-]>);
 
-#[derive(Clone, Debug)]
-pub(crate) struct Doctype {
-    pub span: Span,
-}
-
-/// This type is generic in order to support multiple kinds of values.
-#[derive(Clone, Debug)]
-pub(crate) struct Value<V> {
-    pub inner: V,
-    pub span: Span,
-}
+#[derive(PartialEq, Clone, Debug)]
+pub(crate) struct Doctype;
 
 /// A value that is either a string literal or an expression.
 ///
@@ -33,7 +20,7 @@ pub(crate) enum LitValue {
     Expr(syn::Expr),
 }
 
-/// A value that represents a placeholder, usually used in formatting contexts.
+/// A value that represents an argument, usually used in formatting contexts.
 ///
 /// The string representation of this value is a placeholder `{}`, that may
 /// contain formatting specifiers `{:?}`.
@@ -41,7 +28,7 @@ pub(crate) enum LitValue {
 /// The token representation of this value is the actual Rust value it contains,
 /// either `LitStr` or `Expr`.
 #[derive(Clone, Debug)]
-pub(crate) enum PlaceholderValue {
+pub(crate) enum ArgValue {
     LitStr(syn::LitStr),
     Expr {
         value: syn::Expr,
@@ -49,56 +36,92 @@ pub(crate) enum PlaceholderValue {
     },
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Attr<V> {
     pub name: DashIdent,
-    pub value: Value<V>,
-    pub span: Span,
+    pub eq_sep: syn::token::Eq,
+    pub value: V,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) enum TagKind<V> {
+pub(crate) enum Tag<V> {
     Opening {
         name: DashIdent,
         attrs: Vec<Attr<V>>,
-        self_closing: bool,
+        self_closing_slash: Option<syn::token::Slash>,
     },
     Closing {
         name: DashIdent,
     },
 }
 
-#[derive(Clone, Debug)]
-pub(crate) struct Tag<V> {
-    pub kind: TagKind<V>,
-    pub span: Span,
-}
-
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Node<V> {
     Doctype(Doctype),
     Tag(Tag<V>),
-    Value(Value<V>),
+    Value(V),
+}
+
+impl DashIdent {
+    pub(crate) fn span(&self) -> Span {
+        self.0.span()
+    }
+}
+
+impl<V: Spanned> Attr<V> {
+    pub(crate) fn span(&self) -> Span {
+        join_spans([self.name.span(), self.eq_sep.span(), self.value.span()])
+    }
 }
 
 impl<V> Tag<V> {
     pub(crate) fn name(&self) -> &DashIdent {
-        match &self.kind {
-            TagKind::Opening { name, .. } => name,
-            TagKind::Closing { name } => name,
+        match self {
+            Self::Opening { name, .. } => name,
+            Self::Closing { name } => name,
+        }
+    }
+
+    pub(crate) fn is_self_closing(&self) -> bool {
+        matches!(
+            self,
+            Self::Opening {
+                self_closing_slash: Some(_),
+                ..
+            }
+        )
+    }
+}
+
+impl<V: Spanned> Tag<V> {
+    pub(crate) fn span(&self) -> Span {
+        match self {
+            Tag::Opening {
+                name,
+                attrs,
+                self_closing_slash,
+            } => {
+                let mut v = Vec::with_capacity(2 + attrs.len());
+                v.push(name.span());
+                for attr in attrs {
+                    v.push(attr.span());
+                }
+                if let Some(slash) = self_closing_slash {
+                    v.push(slash.span());
+                }
+                join_spans(v)
+            }
+            Tag::Closing { name } => name.span(),
         }
     }
 }
 
 impl<V: Clone> Node<V> {
-    pub(crate) fn get_all_values(&self) -> Vec<Value<V>> {
+    pub(crate) fn get_all_values(&self) -> Vec<V> {
         let mut v = Vec::new();
 
         match self {
-            Node::Tag(Tag {
-                kind: TagKind::Opening { attrs, .. },
-                ..
-            }) => {
+            Node::Tag(Tag::Opening { attrs, .. }) => {
                 for attr in attrs {
                     v.push(attr.value.clone());
                 }
@@ -122,59 +145,24 @@ impl ToTokens for LitValue {
     }
 }
 
-impl ToTokens for PlaceholderValue {
+impl ToTokens for ArgValue {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
-            PlaceholderValue::LitStr(value) => value.to_tokens(tokens),
-            PlaceholderValue::Expr { value, .. } => value.to_tokens(tokens),
+            ArgValue::LitStr(value) => value.to_tokens(tokens),
+            ArgValue::Expr { value, .. } => value.to_tokens(tokens),
         }
     }
 }
 
-impl<V: ToTokens> ToTokens for Value<V> {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        self.inner.to_tokens(tokens)
-    }
-}
+fn join_spans(spans: impl IntoIterator<Item = Span>) -> Span {
+    let mut iter = spans.into_iter();
 
-impl PartialEq for DashIdent {
-    fn eq(&self, other: &Self) -> bool {
-        self.inner == other.inner
-    }
-}
+    let first = match iter.next() {
+        Some(span) => span,
+        None => return Span::call_site(),
+    };
 
-impl PartialEq for Doctype {
-    fn eq(&self, _: &Self) -> bool {
-        true
-    }
-}
-
-impl<V: PartialEq> PartialEq for Value<V> {
-    fn eq(&self, other: &Self) -> bool {
-        self.inner == other.inner
-    }
-}
-
-impl<V: PartialEq> PartialEq for Attr<V> {
-    fn eq(&self, other: &Self) -> bool {
-        self.name == other.name && self.value == other.value
-    }
-}
-
-impl<V: PartialEq> PartialEq for Tag<V> {
-    fn eq(&self, other: &Self) -> bool {
-        self.kind == other.kind
-    }
-}
-
-impl<V> From<Doctype> for Node<V> {
-    fn from(value: Doctype) -> Self {
-        Self::Doctype(value)
-    }
-}
-
-impl<V> From<Tag<V>> for Node<V> {
-    fn from(value: Tag<V>) -> Self {
-        Self::Tag(value)
-    }
+    iter.fold(None, |_prev, next| Some(next))
+        .and_then(|last| first.join(last))
+        .unwrap_or(first)
 }

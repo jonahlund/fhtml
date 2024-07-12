@@ -1,26 +1,50 @@
+use syn::spanned::Spanned;
+
 use crate::ast;
 
-pub(crate) fn analyze_nodes<V>(nodes: &[ast::Node<V>]) -> syn::Result<()> {
-    analyze_node_tree(nodes)?;
+pub(crate) fn analyze_nodes<V: Spanned>(
+    nodes: &[ast::Node<V>],
+) -> syn::Result<()> {
+    check_node_tree(nodes)?;
+    check_duplicate_attrs(nodes)?;
     Ok(())
 }
 
-fn analyze_node_tree<V>(nodes: &[ast::Node<V>]) -> syn::Result<()> {
+fn check_duplicate_attrs<V: Spanned>(
+    nodes: &[ast::Node<V>],
+) -> syn::Result<()> {
+    for node in nodes {
+        if let ast::Node::Tag(ast::Tag::Opening { attrs, .. }) = node {
+            for attr in attrs.iter().rev() {
+                if attrs.iter().filter(|a| attr.name == a.name).count() > 1 {
+                    return Err(syn::Error::new(
+                        attr.span(),
+                        format_args!("duplicate attribute `{}`", attr.name),
+                    ));
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn check_node_tree<V: Spanned>(nodes: &[ast::Node<V>]) -> syn::Result<()> {
     let mut stack = Vec::new();
 
     for node in nodes {
         if let ast::Node::Tag(tag) = node {
-            match &tag.kind {
-                ast::TagKind::Opening { self_closing, .. } => {
-                    if !self_closing {
+            match &tag {
+                ast::Tag::Opening { .. } => {
+                    if !tag.is_self_closing() {
                         stack.push(tag);
                     }
                 }
-                ast::TagKind::Closing { name } => {
+                ast::Tag::Closing { name } => {
                     if let Some(stack_tag) = stack.pop() {
                         if name != stack_tag.name() {
                             return Err(syn::Error::new(
-                                tag.span,
+                                tag.span(),
                                 format_args!(
                                     "closing tag mismatch, expected </{}>, \
                                      found </{}>",
@@ -31,7 +55,7 @@ fn analyze_node_tree<V>(nodes: &[ast::Node<V>]) -> syn::Result<()> {
                         }
                     } else {
                         return Err(syn::Error::new(
-                            tag.span,
+                            tag.span(),
                             format_args!(
                                 "closing tag has no corresponding opening \
                                  <{}> tag",
@@ -46,9 +70,9 @@ fn analyze_node_tree<V>(nodes: &[ast::Node<V>]) -> syn::Result<()> {
 
     if let Some(stack_tag) = stack.pop() {
         return Err(syn::Error::new(
-            stack_tag.span,
+            stack_tag.span(),
             format_args!(
-                "opening tag has no corresponding closing <{}> tag",
+                "opening tag has no corresponding closing </{}> tag",
                 stack_tag.name()
             ),
         ));
@@ -72,92 +96,97 @@ mod tests {
     }
 
     #[test]
-    fn matching_opening_and_closing_tag() {
-        analyze_node_tree(&[
-            ast::Tag::<ast::LitValue> {
-                kind: ast::TagKind::Opening {
-                    name: dash_ident!(foo),
-                    attrs: vec![],
-                    self_closing: false,
-                },
-                span: Span::mixed_site(),
-            }
-            .into(),
-            ast::Tag::<ast::LitValue> {
-                kind: ast::TagKind::Closing {
-                    name: dash_ident!(foo),
-                },
-                span: Span::mixed_site(),
-            }
-            .into(),
+    fn opening_and_closing_tags() {
+        check_node_tree(&[
+            ast::Node::Tag(ast::Tag::<ast::LitValue>::Opening {
+                name: dash_ident!(foo),
+                attrs: vec![],
+                self_closing_slash: None,
+            }),
+            ast::Node::Tag(ast::Tag::<ast::LitValue>::Closing {
+                name: dash_ident!(foo),
+            }),
         ])
         .expect(
-            "an opening and closing tag with the same name should be valid",
+            "an opening and closing tag with the same name should be allowed",
         );
     }
 
     #[test]
-    fn single_self_closing_tag() {
-        analyze_node_tree(&[ast::Tag::<ast::LitValue> {
-            kind: ast::TagKind::Opening {
+    fn self_closing_tag() {
+        check_node_tree(&[ast::Node::Tag(
+            ast::Tag::<ast::LitValue>::Opening {
                 name: dash_ident!(foo),
                 attrs: vec![],
-                self_closing: true,
+                self_closing_slash: Some(syn::Token![/]([Span::call_site()])),
             },
-            span: Span::mixed_site(),
-        }
-        .into()])
-        .expect("a single self-closing tag should be valid");
+        )])
+        .expect("a self-closing tag should be allowed");
     }
 
     #[test]
     fn single_opening_tag() {
-        analyze_node_tree(&[ast::Tag {
-            kind: ast::TagKind::Opening::<ast::LitValue> {
+        check_node_tree(&[ast::Node::Tag(
+            ast::Tag::<ast::LitValue>::Opening {
                 name: dash_ident!(foo),
                 attrs: vec![],
-                self_closing: false,
+                self_closing_slash: None,
             },
-            span: Span::mixed_site(),
-        }
-        .into()])
-        .expect_err("a single opening tag should be invalid");
+        )])
+        .expect_err("a single opening tag should be disallowed");
     }
 
     #[test]
     fn single_closing_tag() {
-        analyze_node_tree(&[ast::Tag {
-            kind: ast::TagKind::Closing::<ast::LitValue> {
+        check_node_tree(&[ast::Node::Tag(
+            ast::Tag::<ast::LitValue>::Closing {
                 name: dash_ident!(foo),
             },
-            span: Span::mixed_site(),
-        }
-        .into()])
-        .expect_err("a single closing tag should be invalid");
+        )])
+        .expect_err("a single closing tag should be disallowed");
     }
 
     #[test]
     fn mismatched_opening_and_closing_tag() {
-        analyze_node_tree(&[
-            ast::Tag {
-                kind: ast::TagKind::Opening::<ast::LitValue> {
-                    name: dash_ident!(foo),
-                    attrs: vec![],
-                    self_closing: false,
-                },
-                span: Span::mixed_site(),
-            }
-            .into(),
-            ast::Tag {
-                kind: ast::TagKind::Closing::<ast::LitValue> {
-                    name: dash_ident!(bar),
-                },
-                span: Span::mixed_site(),
-            }
-            .into(),
+        check_node_tree(&[
+            ast::Node::Tag(ast::Tag::<ast::LitValue>::Opening {
+                name: dash_ident!(foo),
+                attrs: vec![],
+                self_closing_slash: None,
+            }),
+            ast::Node::Tag(ast::Tag::<ast::LitValue>::Closing {
+                name: dash_ident!(bar),
+            }),
         ])
         .expect_err(
-            "a mismatch between opening and closing tag should be invalid",
+            "a mismatch between opening and closing tag should be disallowed",
         );
+    }
+
+    #[test]
+    fn duplicate_attrs() {
+        check_duplicate_attrs(&[ast::Node::Tag(ast::Tag::Opening {
+            name: dash_ident!(foo),
+            attrs: vec![
+                ast::Attr {
+                    name: dash_ident!(bar),
+                    eq_sep: syn::Token![=]([Span::call_site()]),
+                    value: ast::LitValue::LitStr(syn::LitStr::new(
+                        "",
+                        Span::call_site(),
+                    )),
+                },
+                ast::Attr {
+                    name: dash_ident!(bar),
+                    eq_sep: syn::Token![=]([Span::call_site()]),
+                    value: ast::LitValue::LitStr(syn::LitStr::new(
+                        "",
+                        Span::call_site(),
+                    )),
+                },
+            ],
+            self_closing_slash: Some(syn::Token![/]([Span::call_site()])),
+        })])
+        .expect_err("duplicate attribute should be disallowed");
     }
 }
