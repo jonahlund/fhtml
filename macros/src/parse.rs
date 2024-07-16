@@ -36,6 +36,7 @@ impl Parse for ast::Doctype {
             input.parse::<kw::DOCTYPE>()?;
         }
         input.parse::<kw::html>()?;
+        input.parse::<syn::Token![>]>()?;
 
         Ok(Self)
     }
