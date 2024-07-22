@@ -1,0 +1,15 @@
+[package]
+name = "fhtml-macros"
+version = "0.7.0"
+edition = "2021"
+authors = ["Jonah Lund <jonahlund@proton.me>"]
+license = "MIT"
+rust-version = "1.65"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["extra-traits", "full"] }

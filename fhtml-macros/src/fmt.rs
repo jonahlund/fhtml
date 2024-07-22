@@ -14,45 +14,40 @@ impl fmt::Display for ast::DashIdent {
     }
 }
 
-impl fmt::Display for ast::LitValue {
-    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
-        unimplemented!()
-    }
-}
-
-impl fmt::Display for ast::ArgValue {
+impl fmt::Display for ast::Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::LitStr(_) => f.write_str("{}"),
-            Self::Expr { specs, .. } => {
-                f.write_char('{')?;
-                if let Some(specs) = specs {
-                    f.write_char(':')?;
-                    specs.to_string().replace(' ', "").fmt(f)?;
+            ast::Value::LitStr(lit_str) => lit_str.value().fmt(f),
+            ast::Value::Expr(syn::Expr::Lit(syn::ExprLit { lit, .. })) => {
+                match lit {
+                    syn::Lit::Str(lit_str) => lit_str.value().fmt(f),
+                    syn::Lit::Byte(lit_byte) => lit_byte.value().fmt(f),
+                    syn::Lit::Char(lit_char) => lit_char.value().fmt(f),
+                    syn::Lit::Int(lit_int) => lit_int.fmt(f),
+                    syn::Lit::Float(lit_float) => lit_float.fmt(f),
+                    syn::Lit::Bool(lit_bool) => lit_bool.value().fmt(f),
+                    _ => Err(fmt::Error),
                 }
-                f.write_char('}')
             }
+            _ => Err(fmt::Error),
         }
     }
 }
 
-impl<V: fmt::Display> fmt::Display for lower_ast::NodeToken<V> {
+impl fmt::Display for lower_ast::Part {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Doctype => f.write_str("<!DOCTYPE html>"),
 
-            // Opening tags start with '<'
+            // Opening tags starts with '<'
             Self::OpeningTagStart => f.write_char('<'),
             // Opening tag name
             Self::OpeningTagName(name) => name.fmt(f),
-            // Opening tags end with '>'
-            //
-            // We do not include a forward slash '/' for self-closing
-            // tags.
+            // Opening tags ends with '>'
             Self::OpeningTagEnd => f.write_char('>'),
 
-            // Closing tags start with "</"
+            // Closing tags starts with "</"
             Self::ClosingTagStart => f.write_str("</"),
             // Closing tag name
             Self::ClosingTagName(name) => name.fmt(f),
@@ -60,7 +55,7 @@ impl<V: fmt::Display> fmt::Display for lower_ast::NodeToken<V> {
             Self::ClosingTagEnd => f.write_char('>'),
 
             // An attribute is always preceeded by a space
-            Self::AttrStartSpace => f.write_char(' '),
+            Self::AttrSpace => f.write_char(' '),
             // Attribute name
             Self::AttrName(name) => name.fmt(f),
             // Equal sign, separating the attribute name from the value
