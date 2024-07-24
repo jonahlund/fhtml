@@ -1,6 +1,6 @@
 use std::fmt::{self, Write};
 
-use crate::{ast, lower_ast};
+use crate::ast;
 
 impl fmt::Display for ast::DashIdent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -34,7 +34,7 @@ impl fmt::Display for ast::Value {
     }
 }
 
-impl fmt::Display for lower_ast::Part {
+impl fmt::Display for ast::Part {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

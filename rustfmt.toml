@@ -1,5 +1,5 @@
 edition = "2021"
-imports_granularity = "Module"
+imports_granularity = "Crate"
 group_imports = "StdExternalCrate"
 max_width = 80
 reorder_imports = true

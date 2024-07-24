@@ -1,74 +1,56 @@
+use std::hash::{DefaultHasher, Hash, Hasher};
+
 use proc_macro::TokenStream;
-use proc_macro2::Span;
-use quote::quote;
+use syn::parse_macro_input;
 
 mod ast;
+mod expand;
 mod fmt;
-mod hash;
-mod lower_ast;
 mod parse;
-mod segment;
-
-use self::hash::hash;
-use self::segment::Segment;
 
 pub(crate) struct WriteInput {
     buffer: syn::Expr,
-    segments: Vec<Segment>,
+    nodes: Vec<ast::Node>,
 }
 
 #[proc_macro]
 pub fn write(input: TokenStream) -> TokenStream {
-    let input_str = input.to_string();
+    let input_str = rm_whitespace(&input.to_string());
+    let input = parse_macro_input!(input as WriteInput);
 
-    let WriteInput { buffer, segments } =
-        syn::parse_macro_input!(input as WriteInput);
+    expand::write(input, input_str.len(), hash(&input_str)).into()
+}
 
-    let input_size = input_str.len();
-    let input_digest = hash(&input_str);
+pub(crate) struct FormatInput {
+    nodes: Vec<ast::Node>,
+}
 
-    let writer_ident = syn::Ident::new("_writer", Span::call_site());
-    let scope_ident = syn::Lifetime::new(
-        &format!("'_scope_{:x}", input_digest),
-        Span::call_site(),
-    );
+#[proc_macro]
+pub fn format(input: TokenStream) -> TokenStream {
+    let input_str = rm_whitespace(&input.to_string());
+    let input = parse_macro_input!(input as FormatInput);
 
-    let ops = segments.into_iter().map(|s| match s {
-        Segment::String(val) => quote! {
-            if let Err(e) = #writer_ident.write_str(#val) {
-                break #scope_ident Err(e);
-            }
-        },
-        Segment::Tokens(val) => quote! {
-            if let Err(e) = ::fhtml::Render::render_to(#val, #writer_ident) {
-                break #scope_ident Err(e);
-            }
-        },
-    });
-
-    quote! {
-        #scope_ident: {
-            let #writer_ident = &mut (#buffer);
-            #writer_ident.reserve(#input_size);
-            #(#ops)*
-            ::core::fmt::Result::Ok(())
-        }
-    }
-    .into()
+    expand::format(input, input_str.len()).into()
 }
 
 pub(crate) struct ConcatInput {
-    pub segments: Vec<proc_macro2::TokenStream>,
+    nodes: Vec<ast::Node>,
 }
 
 #[proc_macro]
 pub fn concat(input: TokenStream) -> TokenStream {
-    let ConcatInput { segments } =
-        syn::parse_macro_input!(input as ConcatInput);
+    let input = parse_macro_input!(input as ConcatInput);
 
-    let output = quote! {
-        ::std::concat!(#(#segments),*)
-    };
+    expand::concat(input).into()
+}
 
-    output.into()
+fn rm_whitespace(input: &str) -> String {
+    input.replace(' ', "")
+}
+
+fn hash<V: Hash>(value: &V) -> usize {
+    let mut hasher = DefaultHasher::new();
+
+    Hash::hash(value, &mut hasher);
+    Hasher::finish(&hasher) as usize
 }

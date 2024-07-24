@@ -1,11 +1,10 @@
-use std::fmt::Write;
+use syn::{
+    ext::IdentExt as _,
+    parse::{Parse, ParseStream},
+    punctuated::Punctuated,
+};
 
-use quote::ToTokens;
-use syn::ext::IdentExt as _;
-use syn::parse::{Parse, ParseStream};
-use syn::punctuated::Punctuated;
-
-use crate::{ast, lower_ast, segment, ConcatInput, WriteInput};
+use crate::{ast, ConcatInput, FormatInput, WriteInput};
 
 mod kw {
     syn::custom_keyword!(DOCTYPE);
@@ -117,24 +116,6 @@ impl Parse for WriteInput {
         let buffer = input.parse()?;
         input.parse::<syn::Token![,]>()?;
 
-        let mut segments = Vec::new();
-        let mut parts = Vec::new();
-
-        while !input.is_empty() {
-            let node = input.parse::<ast::Node>()?;
-            parts.extend(node.into_parts());
-        }
-
-        segments.append(&mut segment::from_parts(&parts));
-
-        Ok(Self { buffer, segments })
-    }
-}
-
-impl Parse for ConcatInput {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let mut segments = Vec::new();
-        let mut acc = String::new();
         let mut nodes = Vec::new();
 
         while !input.is_empty() {
@@ -142,30 +123,31 @@ impl Parse for ConcatInput {
             nodes.push(node);
         }
 
-        for node in nodes {
-            for token in node.into_parts() {
-                match token {
-                    lower_ast::Part::AttrValue(v)
-                    | lower_ast::Part::Value(v) => {
-                        if let ast::Value::LitStr(lit) = v {
-                            acc.push_str(&lit.value());
-                        } else {
-                            segments.push(acc.to_token_stream());
-                            // segments.push(v.to_token_stream());
-                            acc.clear();
-                        }
-                    }
-                    _ => {
-                        let _ = write!(acc, "{}", token);
-                    }
-                }
-            }
+        Ok(Self { buffer, nodes })
+    }
+}
+
+impl Parse for FormatInput {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let mut nodes = Vec::new();
+
+        while !input.is_empty() {
+            let node = input.parse::<ast::Node>()?;
+            nodes.push(node);
         }
 
-        if !acc.is_empty() {
-            segments.push(acc.to_token_stream());
+        Ok(Self { nodes })
+    }
+}
+impl Parse for ConcatInput {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let mut nodes = Vec::new();
+
+        while !input.is_empty() {
+            let node = input.parse::<ast::Node>()?;
+            nodes.push(node);
         }
 
-        Ok(Self { segments })
+        Ok(Self { nodes })
     }
 }
