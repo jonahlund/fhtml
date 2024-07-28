@@ -12,18 +12,17 @@ pub(crate) fn write(
 ) -> TokenStream {
     let WriteInput { buffer, nodes } = input;
 
-    let writer = syn::Ident::new("_writer", Span::call_site());
     let scope =
         syn::Lifetime::new(&format!("'_scope_{:x}", digest), Span::call_site());
 
-    let ops = accumulate(&shatter(nodes)).into_iter().map(|s| match s {
+    let ops = merge(&slice(nodes)).into_iter().map(|s| match s {
         Segment::String(val) => quote! {
-            if let Err(e) = #writer.write_str(#val) {
+            if let Err(e) = #buffer.write_str(#val) {
                 break #scope Err(e);
             }
         },
         Segment::Tokens(val) => quote! {
-            if let Err(e) = ::fhtml::ToHtml::to_html(&(#val), #writer) {
+            if let Err(e) = ::fhtml::Render::render_to(&(#val), &mut #buffer) {
                 break #scope Err(e);
             }
         },
@@ -31,8 +30,7 @@ pub(crate) fn write(
 
     quote! {
         #scope: {
-            let #writer = &mut (#buffer);
-            #writer.reserve(#size);
+            #buffer.reserve(#size);
             #(#ops)*
             ::core::fmt::Result::Ok(())
         }
@@ -42,22 +40,22 @@ pub(crate) fn write(
 pub(crate) fn format(input: FormatInput, size: usize) -> TokenStream {
     let FormatInput { nodes } = input;
 
-    let writer = syn::Ident::new("_writer", Span::call_site());
+    let buffer = syn::Ident::new("_buffer", Span::call_site());
 
-    let ops = accumulate(&shatter(nodes)).into_iter().map(|s| match s {
+    let ops = merge(&slice(nodes)).into_iter().map(|s| match s {
         Segment::String(val) => quote! {
-            #writer.push_str(#val);
+            #buffer.push_str(#val);
         },
         Segment::Tokens(val) => quote! {
-            let _ = ::fhtml::ToHtml::to_html(&(#val), &mut buf);
+            let _ = ::fhtml::Render::render_to(&(#val), &mut #buffer);
         },
     });
 
     quote! {
         {
-            let mut #writer = String::with_capacity(#size);
+            let mut #buffer = String::with_capacity(#size);
             #(#ops)*
-            buf
+            ::fhtml::PreEscaped(#buffer)
         }
     }
 }
@@ -65,21 +63,16 @@ pub(crate) fn format(input: FormatInput, size: usize) -> TokenStream {
 pub(crate) fn concat(input: ConcatInput) -> TokenStream {
     let ConcatInput { nodes } = input;
 
-    let literal = accumulate(&shatter(nodes)).into_iter().fold(
+    let literal = merge(&slice(nodes)).into_iter().fold(
         String::new(),
         |acc, s| match s {
             Segment::String(val) => acc + &val,
-            // This should always return an error here, even though nightly
-            // has proc_macro_expand, this should resolve at
-            // the segment parser and not here, thus any
-            // possible macro expansions should yield a String
-            // segment
             Segment::Tokens(_) => todo!(),
         },
     );
 
     quote! {
-        #literal
+        ::fhtml::PreEscaped(#literal)
     }
 }
 
@@ -88,7 +81,7 @@ enum Segment {
     Tokens(TokenStream),
 }
 
-fn accumulate(parts: &[ast::Part]) -> Vec<Segment> {
+fn merge(parts: &[ast::Part]) -> Vec<Segment> {
     let mut segments = Vec::new();
     let mut acc = String::new();
 
@@ -110,7 +103,7 @@ fn accumulate(parts: &[ast::Part]) -> Vec<Segment> {
     segments
 }
 
-fn shatter(nodes: Vec<ast::Node>) -> Vec<ast::Part> {
+fn slice(nodes: Vec<ast::Node>) -> Vec<ast::Part> {
     nodes
         .into_iter()
         .flat_map(|n| n.into_parts())

@@ -1,7 +1,7 @@
 use quote::ToTokens;
 use syn::punctuated::Punctuated;
 
-// An identifier separated by dashes, `foo-bar-baz`.
+/// An identifier separated by dashes, e.g., `foo-bar-baz`.
 #[derive(PartialEq, Clone, Debug)]
 pub(crate) struct DashIdent(pub Punctuated<syn::Ident, syn::Token![-]>);
 
@@ -9,21 +9,22 @@ pub(crate) struct DashIdent(pub Punctuated<syn::Ident, syn::Token![-]>);
 #[derive(PartialEq, Clone, Debug)]
 pub(crate) struct Doctype;
 
-/// A value that is either a string literal or an expression.
+/// A value that is either a string literal or an expression, e.g., `"foo"`,
+/// `1 + 2`.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Value {
     LitStr(syn::LitStr),
     Expr(syn::Expr),
 }
 
-/// An HTML attribute, foo="bar"
+/// An HTML attribute, e.g., `foo="bar"`
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Attr {
     pub name: DashIdent,
     pub value: Value,
 }
 
-/// An HTML opening or closing tag, <foo>, </bar>.
+/// An HTML opening or closing tag, e.g., `<foo ..>`, `</bar>`.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Tag {
     Opening {
@@ -47,30 +48,43 @@ pub(crate) enum Node {
 /// A small, fine grained representation of an HTML node.
 ///
 /// This is useful for token processing, formatting, and more, where a complete
-/// HTML node representation would otherwise be limiting and insufficient.
+/// HTML node representation might otherwise be limiting and insufficient.
 #[derive(Debug, PartialEq)]
 pub(crate) enum Part {
+    /// An HTML doctype, e.g., `<!DOCTYPE html>`.
     Doctype,
 
-    // Opening tag
+    // Opening tag, e.g., `<foo ..>`
+    /// The beginning of an opening tag, `<`.
     OpeningTagStart,
+    /// The opening tag name.
     OpeningTagName(DashIdent),
+    /// The ending of an opening tag, `>`.
     OpeningTagEnd,
 
-    // Closing tag
+    // Closing tag, e.g., `</foo>`.
+    /// The beginning of a closing tag, `</`.
     ClosingTagStart,
+    /// The closing tag name.
     ClosingTagName(DashIdent),
+    /// The ending of a closing tag, `>`.
     ClosingTagEnd,
 
-    // Attribute
+    // Attribute, e.g., `foo="bar"`.
+    /// A whitespace preceeding the attribute.
     AttrSpace,
+    /// The attribute name.
     AttrName(DashIdent),
+    /// An equal sign `=`, separating the attribute name from the value.
     AttrEqSep,
-    AttrValueStartQuote,
+    /// The opening quote, `"`.
+    AttrValueOpeningQuote,
+    /// The attribute value.
     AttrValue(Value),
-    AttrValueEndQuote,
+    /// The closing quote, `"`.
+    AttrValueClosingQuote,
 
-    // Stray value
+    // A standalone value, i.e., a value not part of a tag definition.
     Value(Value),
 }
 
@@ -81,9 +95,9 @@ impl Attr {
             Part::AttrSpace,
             Part::AttrName(self.name),
             Part::AttrEqSep,
-            Part::AttrValueStartQuote,
+            Part::AttrValueOpeningQuote,
             Part::AttrValue(self.value),
-            Part::AttrValueEndQuote,
+            Part::AttrValueClosingQuote,
         ]
     }
 }

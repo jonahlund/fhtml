@@ -1,3 +1,3 @@
 [workspace]
 resolver = "2"
-members = ["fhtml", "fhtml-macros"]
+members = ["fhtml", "fhtml-core", "fhtml-macros"]

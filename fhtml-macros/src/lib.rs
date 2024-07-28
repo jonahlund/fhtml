@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "nightly", feature(proc_macro_expand))]
+
 use std::hash::{DefaultHasher, Hash, Hasher};
 
 use proc_macro::TokenStream;

@@ -6,7 +6,10 @@ authors = ["Jonah Lund <jonahlund@proton.me>"]
 license = "MIT"
 rust-version = "1.65"
 
+[features]
+default = []
+nightly = ["fhtml-macros/nightly"]
+
 [dependencies]
 fhtml-macros = { version = "0.7", path = "../fhtml-macros" }
-itoa = "1"
-ryu = "1"
+fhtml-core = { version = "0.7", path = "../fhtml-core" }
