@@ -2,14 +2,7 @@
 name = "fhtml"
 version = "0.7.0"
 edition = "2021"
-authors = ["Jonah Lund <jonahlund@proton.me>"]
-license = "MIT"
-rust-version = "1.65"
-
-[features]
-default = []
-nightly = ["fhtml-macros/nightly"]
 
 [dependencies]
-fhtml-macros = { version = "0.7", path = "../fhtml-macros" }
-fhtml-core = { version = "0.7", path = "../fhtml-core" }
+fhtml-core = { version = "0.7.0", path = "../fhtml-core" }
+fhtml-macros = { version = "0.7.0", path = "../fhtml-macros" }
